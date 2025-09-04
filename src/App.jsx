@@ -1,72 +1,71 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, Trash2, Edit, Save, X, Download, Upload, Share2, Sun, Moon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Grade to Point Mapping ---
 const gradePoints = {
-  'O': 10,
-  'A+': 10,
-  'A': 9,
-  'B+': 8,
-  'B': 7,
-  'C': 6,
-  'P': 5,
-  'F': 0,
-  'Fail': 0,
-};
-
-// --- Helper Functions ---
-const getRandomColor = () => {
-    const colors = ['#4A90E2', '#50E3C2', '#B8E986', '#F5A623', '#F8E71C', '#E57373', '#BA68C8'];
-    return colors[Math.floor(Math.random() * colors.length)];
+  'O': 10, 'A+': 10, 'A': 9, 'B+': 8, 'B': 7, 'C': 6, 'P': 5, 'F': 0, 'FAIL': 0,
 };
 
 // --- Custom Alert Component ---
 const CustomAlert = ({ message, onClose }) => {
   if (!message) return null;
   return (
-    <div style={styles.alertOverlay}>
-      <div style={styles.alertBox}>
-        <p style={styles.alertMessage}>{message.title}</p>
-        <p style={styles.alertSubMessage}>{message.body}</p>
-        <button onClick={onClose} style={styles.alertButton}>OK</button>
-      </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <motion.div
+        className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl w-full max-w-sm text-center"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+      >
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{message.title}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 mb-6">{message.body}</p>
+        <button onClick={onClose} className="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400">
+          OK
+        </button>
+      </motion.div>
     </div>
   );
 };
 
 // --- Main App Component ---
-const App = () => {
+export default function App() {
   const [semesters, setSemesters] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentSemester, setCurrentSemester] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [alertMessage, setAlertMessage] = useState(null);
+  const [theme, setTheme] = useState('light');
 
   // --- Data Persistence ---
   useEffect(() => {
     try {
-      const jsonValue = localStorage.getItem('@semesters_data');
-      if (jsonValue !== null) {
-        setSemesters(JSON.parse(jsonValue));
-      }
+      const storedSemesters = localStorage.getItem('@semesters_data');
+      if (storedSemesters) setSemesters(JSON.parse(storedSemesters));
+
+      const storedTheme = localStorage.getItem('theme') || 'light';
+      setTheme(storedTheme);
     } catch (e) {
       console.error("Failed to load data from storage", e);
+      setAlertMessage({ title: "Load Error", body: "Could not load your saved data." });
     }
   }, []);
 
   useEffect(() => {
     try {
-      if (semesters.length > 0) { // Only save if there's data
-          const jsonValue = JSON.stringify(semesters);
-          localStorage.setItem('@semesters_data', jsonValue);
-      } else { // If semesters are cleared, clear storage too
-          const storedData = localStorage.getItem('@semesters_data');
-          if(storedData) localStorage.removeItem('@semesters_data');
-      }
+      localStorage.setItem('@semesters_data', JSON.stringify(semesters));
     } catch (e) {
       console.error("Failed to save data to storage", e);
+      setAlertMessage({ title: "Save Error", body: "Could not save your changes." });
     }
   }, [semesters]);
+
+  useEffect(() => {
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   // --- Calculation Logic ---
   const calculateSGPA = useCallback((subjects) => {
@@ -76,7 +75,7 @@ const App = () => {
     subjects.forEach(subject => {
       const credits = parseFloat(subject.credits);
       const grade = subject.grade.toUpperCase();
-      const point = gradePoints[grade] || 0;
+      const point = gradePoints[grade] !== undefined ? gradePoints[grade] : 0;
       if (!isNaN(credits) && credits > 0) {
         totalPoints += credits * point;
         totalCredits += credits;
@@ -91,8 +90,8 @@ const App = () => {
     semesters.forEach(semester => {
       semester.subjects.forEach(subject => {
         const credits = parseFloat(subject.credits);
-        const point = gradePoints[subject.grade.toUpperCase()] || 0;
         if (!isNaN(credits) && credits > 0) {
+          const point = gradePoints[subject.grade.toUpperCase()] || 0;
           grandTotalPoints += credits * point;
           grandTotalCredits += credits;
         }
@@ -101,508 +100,281 @@ const App = () => {
     return grandTotalCredits === 0 ? '0.00' : (grandTotalPoints / grandTotalCredits).toFixed(2);
   }, [semesters]);
 
+  const totalCreditsCompleted = useCallback(() => {
+    return semesters.reduce((total, sem) =>
+      total + sem.subjects.reduce((semTotal, sub) =>
+        semTotal + (parseFloat(sub.credits) || 0), 0), 0);
+  }, [semesters]);
+
+
   // --- Handlers for Semester Operations ---
   const handleAddNewSemester = () => {
     setCurrentSemester({
       name: `Semester ${semesters.length + 1}`,
       subjects: [{ name: '', credits: '', grade: '' }],
-      sgpa: '0.00',
-      color: getRandomColor(),
     });
     setIsEditing(false);
     setModalVisible(true);
   };
 
   const handleEditSemester = (index) => {
-    setCurrentSemester(JSON.parse(JSON.stringify(semesters[index]))); // Deep copy
+    setCurrentSemester(JSON.parse(JSON.stringify(semesters[index])));
     setIsEditing(true);
     setEditIndex(index);
     setModalVisible(true);
   };
 
   const handleSaveSemester = () => {
-    if (currentSemester.subjects.some(s => !s.name || !s.credits || !s.grade)) {
-      setAlertMessage({title: "Incomplete Fields", body: "Please fill in all details for each subject."});
+    if (currentSemester.subjects.some(s => !s.name.trim() || !s.credits || !s.grade)) {
+      setAlertMessage({ title: "Incomplete Fields", body: "Please fill all details for each subject." });
       return;
     }
-    
-    const updatedSemester = { ...currentSemester, sgpa: calculateSGPA(currentSemester.subjects) };
+    const sgpa = calculateSGPA(currentSemester.subjects);
+    const updatedSemester = { ...currentSemester, sgpa };
 
-    let newSemesters;
-    if (isEditing) {
-      newSemesters = [...semesters];
-      newSemesters[editIndex] = updatedSemester;
-    } else {
-      newSemesters = [...semesters, updatedSemester];
-    }
-    
-    setSemesters(newSemesters);
+    setSemesters(prev => isEditing ? prev.map((s, i) => i === editIndex ? updatedSemester : s) : [...prev, updatedSemester]);
     setModalVisible(false);
-    setCurrentSemester(null);
-    setEditIndex(null);
   };
-  
+
   const handleDeleteSemester = (index) => {
-    if (window.confirm(`Are you sure you want to delete ${semesters[index].name}? This action cannot be undone.`)) {
-        const newSemesters = semesters.filter((_, i) => i !== index);
-        setSemesters(newSemesters);
-    }
+    setSemesters(prev => prev.filter((_, i) => i !== index));
   };
-  
+
   // --- Handlers for Subject Operations within the Modal ---
   const handleSubjectChange = (index, field, value) => {
     const newSubjects = [...currentSemester.subjects];
     newSubjects[index][field] = value;
     setCurrentSemester({ ...currentSemester, subjects: newSubjects });
   };
-  
+
   const handleAddSubject = () => {
-    const newSubjects = [...currentSemester.subjects, { name: '', credits: '', grade: '' }];
-    setCurrentSemester({ ...currentSemester, subjects: newSubjects });
+    setCurrentSemester(prev => ({...prev, subjects: [...prev.subjects, { name: '', credits: '', grade: '' }]}));
   };
-  
+
   const handleDeleteSubject = (index) => {
     if (currentSemester.subjects.length > 1) {
-      const newSubjects = currentSemester.subjects.filter((_, i) => i !== index);
-      setCurrentSemester({ ...currentSemester, subjects: newSubjects });
+      setCurrentSemester(prev => ({...prev, subjects: prev.subjects.filter((_, i) => i !== index)}));
     } else {
-      setAlertMessage({title: "Cannot Delete", body: "You must have at least one subject."});
+      setAlertMessage({ title: "Action Not Allowed", body: "A semester must have at least one subject." });
     }
   };
 
-  // --- Render Functions ---
-  const renderSemesterList = () => (
-    <div style={styles.semesterList}>
-      {semesters.map((semester, index) => (
-        <div key={index} style={{ ...styles.semesterCard, borderLeft: `5px solid ${semester.color}` }}>
-          <div style={styles.semesterInfo}>
-            <p style={styles.semesterTitle}>{semester.name}</p>
-            <p style={styles.semesterCredits}>
-              {semester.subjects.reduce((acc, s) => acc + (parseFloat(s.credits) || 0), 0)} Credits
-            </p>
-          </div>
-          <div style={styles.semesterSGPAContainer}>
-            <p style={styles.sgpaValue}>{semester.sgpa}</p>
-            <p style={styles.sgpaLabel}>SGPA</p>
-          </div>
-          <div style={styles.semesterActions}>
-            <button onClick={() => handleEditSemester(index)} style={styles.actionButton}>
-              <span style={styles.actionButtonText}>EDIT</span>
-            </button>
-            <button onClick={() => handleDeleteSemester(index)} style={styles.actionButton}>
-              <span style={{...styles.actionButtonText, ...styles.deleteButtonText}}>DELETE</span>
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderModal = () => {
-    if (!modalVisible) return null;
-    return (
-      <div style={styles.centeredView}>
-        <div style={styles.modalView}>
-          <input
-              type="text"
-              style={styles.modalTitle}
-              value={currentSemester?.name}
-              onChange={(e) => setCurrentSemester({...currentSemester, name: e.target.value})}
-          />
-          <div style={styles.subjectHeader}>
-            <p style={{ ...styles.headerText, flex: 3 }}>Subject Name</p>
-            <p style={{ ...styles.headerText, flex: 1.5, textAlign: 'center' }}>Credits</p>
-            <p style={{ ...styles.headerText, flex: 1.5, textAlign: 'center' }}>Grade</p>
-            <div style={{width: 30}} />
-          </div>
-          <div style={styles.modalScrollView}>
-            {currentSemester?.subjects.map((subject, index) => (
-              <div key={index} style={styles.subjectRow}>
-                <input
-                  style={{...styles.input, flex: 3}}
-                  placeholder="e.g., Data Structures"
-                  value={subject.name}
-                  onChange={(e) => handleSubjectChange(index, 'name', e.target.value)}
-                />
-                <input
-                  style={{...styles.input, flex: 1.5, textAlign: 'center'}}
-                  placeholder="e.g., 4"
-                  type="number"
-                  value={String(subject.credits)}
-                  onChange={(e) => handleSubjectChange(index, 'credits', e.target.value)}
-                />
-                <input
-                  style={{...styles.input, flex: 1.5, textAlign: 'center', textTransform: 'uppercase'}}
-                  placeholder="e.g., A+"
-                  value={subject.grade}
-                  onChange={(e) => handleSubjectChange(index, 'grade', e.target.value)}
-                />
-                <button onClick={() => handleDeleteSubject(index)} style={styles.deleteSubjectButton}>
-                    <span style={styles.deleteSubjectText}>✕</span>
-                </button>
-              </div>
-            ))}
-          </div>
-          <button style={styles.addButton} onClick={handleAddSubject}>
-            <span style={styles.addButtonText}>+ Add Subject</span>
-          </button>
-          <div style={styles.modalActions}>
-            <button
-              style={{...styles.button, ...styles.buttonClose}}
-              onClick={() => setModalVisible(false)}
-            >
-              <span style={styles.textStyle}>Cancel</span>
-            </button>
-            <button
-              style={{...styles.button, ...styles.buttonSave}}
-              onClick={handleSaveSemester}
-            >
-              <span style={styles.textStyle}>Save</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  // --- Data Management Handlers ---
+  const handleExport = () => {
+    if (semesters.length === 0) {
+      setAlertMessage({ title: "No Data", body: "There is no data to export." });
+      return;
+    }
+    const dataStr = JSON.stringify(semesters, null, 2);
+    const blob = new Blob([dataStr], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'cgpa_data.json';
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
-  return (
-    <div style={styles.container}>
-      <CustomAlert message={alertMessage} onClose={() => setAlertMessage(null)} />
-      {renderModal()}
-      <header style={styles.header}>
-        <h1 style={styles.title}>CGPA Tracker</h1>
-        <div style={styles.cgpaContainer}>
-          <p style={styles.cgpaValue}>{calculateCGPA()}</p>
-          <p style={styles.cgpaLabel}>Overall CGPA</p>
-        </div>
-      </header>
-      <main style={{flex: 1, overflowY: 'auto'}}>
-          {semesters.length > 0 ? (
-            renderSemesterList()
-          ) : (
-            <div style={styles.emptyStateContainer}>
-                <p style={styles.emptyStateText}>No semesters yet.</p>
-                <p style={styles.emptyStateSubText}>Tap the '+' button to add your first semester!</p>
-            </div>
-          )}
-      </main>
-      <button style={styles.fab} onClick={handleAddNewSemester}>
-        <span style={styles.fabIcon}>+</span>
+
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (Array.isArray(importedData)) {
+            setSemesters(importedData);
+            setAlertMessage({ title: "Success", body: "Data imported successfully." });
+          } else {
+            throw new Error("Invalid data format.");
+          }
+        } catch (error) {
+          setAlertMessage({ title: "Import Error", body: "Could not import data. The file may be corrupt or in the wrong format." });
+        }
+      };
+      reader.readAsText(file);
+    }
+    event.target.value = null;
+  };
+
+  const handleShare = () => {
+    const cgpa = calculateCGPA();
+    const shareText = `Hey! I'm tracking my academic progress and my current CGPA is ${cgpa}.`;
+    if (navigator.share) {
+      navigator.share({ title: 'My CGPA Progress', text: shareText }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(shareText);
+      setAlertMessage({ title: "Copied!", body: "Your progress has been copied to the clipboard." });
+    }
+  };
+
+  const EmptyState = () => (
+    <div className="text-center py-20 px-6">
+       <svg className="mx-auto h-24 w-24 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path fillRule="evenodd" d="M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6zm3-1a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V6a1 1 0 00-1-1H6zm1.5 8.707a.5.5 0 01.707 0L9.5 15.086l2.793-2.793a.5.5 0 01.707 0l3.5 3.5a.5.5 0 01-.707.707L13 13.586l-2.793 2.793a.5.5 0 01-.707 0L7.207 14.5a.5.5 0 010-.707z" clipRule="evenodd" />
+      </svg>
+      <h3 className="mt-4 text-xl font-semibold text-gray-800 dark:text-gray-200">No Semesters Added</h3>
+      <p className="mt-2 text-md text-gray-500 dark:text-gray-400">Get started by adding your first semester's results.</p>
+      <button onClick={handleAddNewSemester} className="mt-6 inline-flex items-center gap-2 bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <Plus size={20} /> Add First Semester
       </button>
     </div>
   );
-};
 
-// --- Styles (as a JS object for inline styling) ---
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100vh',
-    backgroundColor: '#121212',
-    color: 'white',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-  },
-  header: {
-    padding: '30px 20px 20px 20px',
-    backgroundColor: '#1e1e1e',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottom: '1px solid #333',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    margin: 0,
-  },
-  cgpaContainer: {
-    textAlign: 'center',
-    backgroundColor: '#4A90E2',
-    padding: '8px 15px',
-    borderRadius: 12,
-  },
-  cgpaValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-    margin: 0,
-  },
-  cgpaLabel: {
-    fontSize: 12,
-    color: '#e0e0e0',
-    fontWeight: '600',
-    margin: 0,
-  },
-  semesterList: {
-    padding: 15,
-  },
-  semesterCard: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    display: 'flex',
-    alignItems: 'center',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-  },
-  semesterInfo: {
-    flex: 1,
-  },
-  semesterTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    margin: 0,
-  },
-  semesterCredits: {
-    fontSize: 14,
-    color: '#aaa',
-    marginTop: 4,
-    margin: 0,
-  },
-  semesterSGPAContainer: {
-    textAlign: 'center',
-    padding: '0 20px',
-  },
-  sgpaValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#50E3C2',
-    margin: 0,
-  },
-  sgpaLabel: {
-    fontSize: 12,
-    color: '#aaa',
-    margin: 0,
-  },
-  semesterActions: {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-around',
-    marginLeft: 10,
-  },
-  actionButton: {
-    padding: '5px 0',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-  },
-  actionButtonText: {
-    fontSize: 14,
-    color: '#4A90E2',
-    fontWeight: 'bold',
-  },
-  deleteButtonText: {
-    color: '#E57373',
-  },
-  fab: {
-    position: 'absolute',
-    right: 25,
-    bottom: 25,
-    width: 60,
-    height: 60,
-    borderRadius: '50%',
-    backgroundColor: '#4A90E2',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    border: 'none',
-    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
-    cursor: 'pointer',
-  },
-  fabIcon: {
-    fontSize: 30,
-    color: '#fff',
-    lineHeight: '30px',
-  },
-  emptyStateContainer: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '20px',
-    textAlign: 'center'
-  },
-  emptyStateText: {
-    fontSize: 18,
-    color: '#aaa',
-    margin: 0,
-  },
-  emptyStateSubText: {
-    fontSize: 14,
-    color: '#777',
-    marginTop: 8,
-    margin: 0,
-  },
-  // Modal styles
-  centeredView: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    zIndex: 1000,
-  },
-  modalView: {
-    width: '100%',
-    maxWidth: '600px', // Max-width for larger screens
-    height: '85%',
-    backgroundColor: '#2a2a2a',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    boxShadow: '0 -2px 10px rgba(0,0,0,0.25)',
-    display: 'flex',
-    flexDirection: 'column',
-    boxSizing: 'border-box',
-  },
-  modalScrollView: {
-    flex: 1,
-    overflowY: 'auto',
-    margin: '10px 0'
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    border: 'none',
-    background: 'none',
-    borderBottom: '1px solid #444',
-    paddingBottom: 10,
-    marginBottom: 20,
-    width: '100%',
-  },
-  subjectHeader: {
-    display: 'flex',
-    marginBottom: 10,
-    padding: '0 5px',
-  },
-  headerText: {
-    color: '#aaa',
-    fontWeight: 'bold',
-    margin: 0,
-  },
-  subjectRow: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  input: {
-    backgroundColor: '#333',
-    color: '#fff',
-    borderRadius: 8,
-    padding: '12px 15px',
-    marginRight: 8,
-    fontSize: 16,
-    border: '1px solid #555',
-  },
-  deleteSubjectButton: {
-    width: 30,
-    height: 45,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-  },
-  deleteSubjectText: {
-    color: '#E57373',
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  addButton: {
-    backgroundColor: 'rgba(74, 144, 226, 0.2)',
-    padding: 15,
-    borderRadius: 10,
-    textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-    border: '1px dashed #4A90E2',
-    cursor: 'pointer',
-    width: '100%',
-    boxSizing: 'border-box'
-  },
-  addButtonText: {
-    color: '#4A90E2',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  modalActions: {
-    display: 'flex',
-    justifyContent: 'space-between',
-  },
-  button: {
-    borderRadius: 10,
-    padding: 12,
-    flex: 1,
-    textAlign: 'center',
-    border: 'none',
-    cursor: 'pointer',
-  },
-  buttonSave: {
-    backgroundColor: '#4A90E2',
-    marginLeft: 10,
-  },
-  buttonClose: {
-    backgroundColor: '#555',
-  },
-  textStyle: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  // Custom Alert Styles
-  alertOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2000,
-  },
-  alertBox: {
-    backgroundColor: '#2a2a2a',
-    padding: '20px 30px',
-    borderRadius: 12,
-    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-    textAlign: 'center',
-    maxWidth: '80%',
-    border: '1px solid #444',
-  },
-  alertMessage: {
-    margin: 0,
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  alertSubMessage: {
-    margin: '10px 0 20px 0',
-    fontSize: '14px',
-    color: '#ccc',
-  },
-  alertButton: {
-    backgroundColor: '#4A90E2',
-    color: 'white',
-    border: 'none',
-    borderRadius: 8,
-    padding: '10px 25px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: 'bold',
-  },
-};
+  const modalInputStyle = "w-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-gray-900 dark:text-white";
 
-export default App;
+  return (
+    <div className="bg-gray-100 dark:bg-gray-900 min-h-screen font-sans text-gray-800 dark:text-gray-200 transition-colors">
+      <CustomAlert message={alertMessage} onClose={() => setAlertMessage(null)} />
+
+      <div className="container mx-auto p-4 sm:p-6 max-w-4xl">
+        <header className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">CGPA Tracker</h1>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+             <button onClick={handleShare} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"><Share2 size={20} /></button>
+            <label className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+              <Upload size={20} />
+              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+            </label>
+            <button onClick={handleExport} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"><Download size={20} /></button>
+          </div>
+        </header>
+
+        <motion.div
+          className="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-2xl shadow-lg text-white mb-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm opacity-80 uppercase font-semibold">Overall CGPA</p>
+              <p className="text-5xl font-bold tracking-tight">{calculateCGPA()}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm opacity-80 uppercase font-semibold">Total Credits</p>
+              <p className="text-3xl font-bold">{totalCreditsCompleted()}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {semesters.length > 0 ? (
+          <div className="space-y-4">
+            <AnimatePresence>
+              {semesters.map((semester, index) => (
+                <motion.div
+                  key={index}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 flex items-center gap-4"
+                >
+                  <div className="flex-grow">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">{semester.name}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {semester.subjects.reduce((acc, s) => acc + (parseFloat(s.credits) || 0), 0)} Credits
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-2xl text-indigo-500 dark:text-indigo-400">{semester.sgpa}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">SGPA</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEditSemester(index)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"><Edit size={18} /></button>
+                    <button onClick={() => handleDeleteSemester(index)} className="p-2 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"><Trash2 size={18} /></button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <EmptyState />
+        )}
+      </div>
+
+      <AnimatePresence>
+        {modalVisible && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4">
+            <motion.div
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md flex flex-col"
+              style={{maxHeight: '90vh'}}
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+            >
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <input
+                  type="text"
+                  className="text-lg font-bold bg-transparent focus:outline-none w-full text-gray-900 dark:text-white"
+                  value={currentSemester?.name}
+                  onChange={(e) => setCurrentSemester(prev => ({...prev, name: e.target.value}))}
+                />
+                <button onClick={() => setModalVisible(false)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"><X size={20} /></button>
+              </div>
+
+              <div className="p-5 flex-grow overflow-y-auto space-y-4">
+                  {currentSemester?.subjects.map((subject, index) => (
+                    <motion.div
+                      key={index}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg relative"
+                    >
+                       <button onClick={() => handleDeleteSubject(index)} className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                      <div className="space-y-3">
+                        <div>
+                           <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Subject Name</label>
+                           <input type="text" placeholder="e.g., Physics" value={subject.name} onChange={e => handleSubjectChange(index, 'name', e.target.value)} className={modalInputStyle} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                           <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Credits</label>
+                              <input type="number" placeholder="e.g., 4" value={subject.credits} onChange={e => handleSubjectChange(index, 'credits', e.target.value)} className={`${modalInputStyle} text-center`} />
+                           </div>
+                           <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Grade</label>
+                              <input type="text" placeholder="e.g., A+" value={subject.grade} onChange={e => handleSubjectChange(index, 'grade', e.target.value)} className={`${modalInputStyle} text-center uppercase`} />
+                           </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+              </div>
+
+              <div className="p-5 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                <button onClick={handleAddSubject} className="w-full text-center py-2.5 bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold rounded-lg transition-colors text-sm">
+                  + Add Another Subject
+                </button>
+                <button onClick={handleSaveSemester} className="w-full text-center py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
+                  <Save size={18} /> {isEditing ? 'Update Semester' : 'Save Semester'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {semesters.length > 0 && (
+         <motion.button
+          onClick={handleAddNewSemester}
+          className="fixed bottom-6 right-6 bg-blue-500 text-white rounded-full p-4 shadow-lg hover:bg-blue-600 transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 z-30"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0 }}
+        >
+          <Plus size={24} />
+        </motion.button>
+      )}
+    </div>
+  );
+}
 
