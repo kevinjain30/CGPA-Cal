@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit, Save, X, Share2, Sun, Moon, ChevronDown } from 'lucide-react';
 
-// --- Grade to Point Mapping (CORRECTED) ---
+// --- Grade to Point Mapping (Corrected to match your marksheet EXACTLY) ---
 const gradePoints = {
   'O': 10,
   'A+': 10,
@@ -9,9 +9,9 @@ const gradePoints = {
   'B+': 8,
   'B': 8,
   'C': 7,
-  'D': 6, // Added D grade
-  'E': 5, // Added E grade
-  'P': 5,
+  'D': 6,
+  'E': 5,
+  'P': 4, // Generally the lowest passing grade
   'F': 0,
   'FAIL': 0,
 };
@@ -83,7 +83,7 @@ export default function App() {
     let totalCredits = 0;
     subjects.forEach(subject => {
       const credits = parseFloat(subject.credits);
-      const grade = subject.grade.toUpperCase();
+      const grade = subject.grade.toUpperCase().trim(); // Added trim() for safety
       const point = gradePoints[grade] !== undefined ? gradePoints[grade] : 0;
       if (!isNaN(credits) && credits > 0) {
         totalPoints += credits * point;
@@ -100,7 +100,7 @@ export default function App() {
       semester.subjects.forEach(subject => {
         const credits = parseFloat(subject.credits);
         if (!isNaN(credits) && credits > 0) {
-          const point = gradePoints[subject.grade.toUpperCase()] || 0;
+          const point = gradePoints[subject.grade.toUpperCase().trim()] || 0; // Added trim() for safety
           grandTotalPoints += credits * point;
           grandTotalCredits += credits;
         }
