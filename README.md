@@ -9,8 +9,8 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
-[![Live Demo](https://img.shields.io/badge/🚀-Live_Demo-success?style=for-the-badge)](https://your-demo-link.com)
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/yourusername/cgpa-tracker)
+<!-- [![Live Demo](https://img.shields.io/badge/🚀-Live_Demo-success?style=for-the-badge)](https://your-demo-link.com)
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/yourusername/cgpa-tracker) -->
 
 </div>
 
