@@ -47,14 +47,6 @@
 
 ---
 
-### 🌓 Theme Toggle Demo
-
-<div align="center">
-<img src="https://via.placeholder.com/800x200/000000/FFFFFF?text=🌙+Dark+Mode+%7C%7C+☀️+Light+Mode" alt="Theme Demo" width="600"/>
-</div>
-
----
-
 ## 🚀 Quick Start
 
 ### Prerequisites
