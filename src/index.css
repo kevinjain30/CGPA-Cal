@@ -6,11 +6,17 @@ body {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 @layer components {
   .modal-input {
     @apply w-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-gray-900 dark:text-white;
   }
+}
+
+/* Smooth theme transitions for common containers */
+*::backdrop, #root, .container, .rounded-2xl, .backdrop-blur-sm {
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
 }
 

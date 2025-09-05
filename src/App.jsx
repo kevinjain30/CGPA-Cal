@@ -1,36 +1,49 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Edit, Save, X, Share2, Sun, Moon, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Trash2, Edit, Save, X, Share2, Sun, Moon, ChevronDown, GraduationCap, BookOpen, TrendingUp, Award, Calculator } from 'lucide-react';
 
-// --- Grade to Point Mapping (Corrected to match your marksheet EXACTLY) ---
+// Components
+import AnimatedBackground from './components/AnimatedBackground';
+import StatsCard from './components/StatsCard';
+import GradeChart from './components/GradeChart';
+import GradeDistribution from './components/GradeDistribution';
+import GoalTracker from './components/GoalTracker';
+import ExportOptions from './components/ExportOptions';
+import QuickActions from './components/QuickActions';
+
+// --- Grade to Point Mapping ---
 const gradePoints = {
-  'O': 10,
-  'A+': 10,
-  'A': 9,
-  'B+': 8,
-  'B': 8,
-  'C': 7,
-  'D': 6,
-  'E': 5,
-  'P': 4, // Generally the lowest passing grade
-  'F': 0,
-  'FAIL': 0,
+  'A+': 10, 'A': 9, 'B': 8, 'C': 7, 'D': 6, 'E': 5, 'F': 0, 'FAIL': 0,
 };
 
 // --- Custom Alert Component ---
 const CustomAlert = ({ message, onClose }) => {
   if (!message) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div
-        className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl w-full max-w-sm text-center transform transition-all duration-300 scale-100"
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       >
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{message.title}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 mb-6">{message.body}</p>
-        <button onClick={onClose} className="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400">
-          OK
-        </button>
-      </div>
-    </div>
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl w-full max-w-sm text-center border border-white/20 dark:border-gray-700/50"
+        >
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{message.title}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 mb-6">{message.body}</p>
+          <button 
+            onClick={onClose} 
+            className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold py-2 px-6 rounded-lg w-full hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105"
+          >
+            OK
+          </button>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
@@ -44,17 +57,15 @@ export default function App() {
   const [alertMessage, setAlertMessage] = useState(null);
   const [theme, setTheme] = useState('light');
   const [openSemesterIndex, setOpenSemesterIndex] = useState(null);
-
+  const [confirmState, setConfirmState] = useState({ show: false, title: '', body: '', onConfirm: null });
 
   // --- Data Persistence ---
   useEffect(() => {
     try {
       const storedSemesters = JSON.parse(localStorage.getItem('@semesters_data') || '[]');
       setSemesters(storedSemesters);
-
       const storedTheme = localStorage.getItem('theme') || 'light';
       setTheme(storedTheme);
-      
     } catch (e) {
       console.error("Failed to load data from storage", e);
       setAlertMessage({ title: "Load Error", body: "Could not load your saved data." });
@@ -83,7 +94,7 @@ export default function App() {
     let totalCredits = 0;
     subjects.forEach(subject => {
       const credits = parseFloat(subject.credits);
-      const grade = subject.grade.toUpperCase().trim(); // Added trim() for safety
+      const grade = subject.grade.toUpperCase().trim();
       const point = gradePoints[grade] !== undefined ? gradePoints[grade] : 0;
       if (!isNaN(credits) && credits > 0) {
         totalPoints += credits * point;
@@ -100,7 +111,7 @@ export default function App() {
       semester.subjects.forEach(subject => {
         const credits = parseFloat(subject.credits);
         if (!isNaN(credits) && credits > 0) {
-          const point = gradePoints[subject.grade.toUpperCase().trim()] || 0; // Added trim() for safety
+          const point = gradePoints[subject.grade.toUpperCase().trim()] || 0;
           grandTotalPoints += credits * point;
           grandTotalCredits += credits;
         }
@@ -113,6 +124,12 @@ export default function App() {
     return semesters.reduce((total, sem) =>
       total + sem.subjects.reduce((semTotal, sub) =>
         semTotal + (parseFloat(sub.credits) || 0), 0), 0);
+  }, [semesters]);
+
+  const averageSGPA = useCallback(() => {
+    if (semesters.length === 0) return '0.00';
+    const totalSGPA = semesters.reduce((sum, sem) => sum + parseFloat(sem.sgpa || 0), 0);
+    return (totalSGPA / semesters.length).toFixed(2);
   }, [semesters]);
 
   // --- Handlers for Semester Operations ---
@@ -145,15 +162,19 @@ export default function App() {
   };
 
   const handleDeleteSemester = (index) => {
-    setSemesters(prev => prev.filter((_, i) => i !== index));
+    setConfirmState({
+      show: true,
+      title: 'Confirm delete?',
+      body: 'This will remove the semester and its subjects. This action cannot be undone.',
+      onConfirm: () => setSemesters(prev => prev.filter((_, i) => i !== index))
+    });
   };
   
   const handleToggleSemester = (index) => {
     setOpenSemesterIndex(openSemesterIndex === index ? null : index);
   };
 
-
-  // --- Handlers for Subject Operations within the Modal ---
+  // --- Handlers for Subject Operations ---
   const handleSubjectChange = (index, field, value) => {
     const newSubjects = [...currentSemester.subjects];
     newSubjects[index][field] = value;
@@ -165,16 +186,22 @@ export default function App() {
   };
 
   const handleDeleteSubject = (index) => {
-    if (currentSemester.subjects.length > 1) {
-      setCurrentSemester(prev => ({...prev, subjects: prev.subjects.filter((_, i) => i !== index)}));
-    } else {
+    if (currentSemester.subjects.length <= 1) {
       setAlertMessage({ title: "Action Not Allowed", body: "A semester must have at least one subject." });
+      return;
     }
+    setConfirmState({
+      show: true,
+      title: 'Confirm delete?',
+      body: 'Remove this subject from the semester? This action cannot be undone.',
+      onConfirm: () => setCurrentSemester(prev => ({...prev, subjects: prev.subjects.filter((_, i) => i !== index)}))
+    });
   };
 
   const handleShareCGPA = () => {
     const cgpa = calculateCGPA();
-    const shareText = `Hey! I'm tracking my academic progress and my current CGPA is ${cgpa}.`;
+    const shareText = `🎓 My Academic Journey Update!\n\n📊 Current CGPA: ${cgpa}\n📚 Total Credits: ${totalCreditsCompleted()}\n🎯 Semesters: ${semesters.length}\n\nTracking my progress with CGPA Tracker! 📈`;
+    
     if (navigator.share) {
       navigator.share({ title: 'My CGPA Progress', text: shareText }).catch(console.error);
     } else {
@@ -186,168 +213,472 @@ export default function App() {
     }
   };
 
+  // Quick Actions Handlers
+  const handleCalculateRequired = () => {
+    setAlertMessage({ 
+      title: "Feature Coming Soon!", 
+      body: "Grade calculator for target CGPA will be available in the next update." 
+    });
+  };
+
+  const handleViewTrends = () => {
+    setAlertMessage({ 
+      title: "Trends Available!", 
+      body: "Check out the SGPA trend chart and grade distribution below!" 
+    });
+  };
+
+  const handleViewAchievements = () => {
+    const cgpa = parseFloat(calculateCGPA());
+    let achievement = "Keep going! 💪";
+    
+    if (cgpa >= 9.5) achievement = "Outstanding Performance! 🏆";
+    else if (cgpa >= 9.0) achievement = "Excellent Work! 🌟";
+    else if (cgpa >= 8.5) achievement = "Great Job! 🎯";
+    else if (cgpa >= 8.0) achievement = "Good Progress! 👍";
+    else if (cgpa >= 7.0) achievement = "Steady Improvement! 📈";
+    
+    setAlertMessage({ 
+      title: "Your Achievement", 
+      body: `${achievement}\nCurrent CGPA: ${cgpa}` 
+    });
+  };
+
   const EmptyState = () => (
-    <div className="text-center py-20 px-6">
-       <svg className="mx-auto h-24 w-24 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path fillRule="evenodd" d="M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6zm3-1a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V6a1 1 0 00-1-1H6zm1.5 8.707a.5.5 0 01.707 0L9.5 15.086l2.793-2.793a.5.5 0 01.707 0l3.5 3.5a.5.5 0 01-.707.707L13 13.586l-2.793 2.793a.5.5 0 01-.707 0L7.207 14.5a.5.5 0 010-.707z" clipRule="evenodd" />
-      </svg>
-      <h3 className="mt-4 text-xl font-semibold text-gray-800 dark:text-gray-200">No Semesters Added</h3>
-      <p className="mt-2 text-md text-gray-500 dark:text-gray-400">Get started by adding your first semester's results.</p>
-      <button onClick={handleAddNewSemester} className="mt-6 inline-flex items-center gap-2 bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400">
-        <Plus size={20} /> Add First Semester
-      </button>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      className="text-center py-20 px-6"
+    >
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="mx-auto h-32 w-32 text-gray-300 dark:text-gray-600 mb-8"
+      >
+        <GraduationCap size={128} />
+      </motion.div>
+      <motion.h3
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+        className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4"
+      >
+        Start Your Academic Journey
+      </motion.h3>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+        className="text-lg text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto"
+      >
+        Track your grades, monitor your progress, and achieve your academic goals with our advanced CGPA tracker.
+      </motion.p>
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleAddNewSemester}
+        className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold py-4 px-8 rounded-2xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+      >
+        <Plus size={24} />
+        Add Your First Semester
+      </motion.button>
+    </motion.div>
   );
 
-  const modalInputStyle = "w-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-gray-900 dark:text-white";
+  const modalInputStyle = "w-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-gray-900 dark:text-white";
+
+  const cgpa = calculateCGPA();
+  const totalCredits = totalCreditsCompleted();
 
   return (
     <>
-      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen font-sans text-gray-800 dark:text-gray-200 transition-colors">
+      <AnimatedBackground />
+      <div className="relative bg-transparent min-h-screen font-sans text-gray-800 dark:text-gray-200 transition-colors duration-500">
         <CustomAlert message={alertMessage} onClose={() => setAlertMessage(null)} />
-        <div className="container mx-auto p-4 sm:p-6 max-w-4xl">
-          <header className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">CGPA Tracker</h1>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-              </button>
-               <button onClick={handleShareCGPA} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"><Share2 size={20} /></button>
-            </div>
-          </header>
-
-          <div
-            className="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-2xl shadow-lg text-white mb-6 transform transition-all duration-300"
+        <AnimatePresence>
+          {confirmState.show && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl w-full max-w-sm text-center border border-white/20 dark:border-gray-700/50"
+              >
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{confirmState.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 mb-6">{confirmState.body}</p>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setConfirmState({ show: false, title: '', body: '', onConfirm: null })}
+                    className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => { confirmState.onConfirm && confirmState.onConfirm(); setConfirmState({ show: false, title: '', body: '', onConfirm: null }); }}
+                    className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold py-2 px-4 rounded-lg hover:from-red-600 hover:to-rose-700 transition-all"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        <div id="cgpa-dashboard" className="container mx-auto p-4 sm:p-6 max-w-7xl pb-28">
+          {/* Header */}
+          <motion.header
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex justify-between items-center mb-8"
           >
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm opacity-80 uppercase font-semibold">Overall CGPA</p>
-                <p className="text-5xl font-bold tracking-tight">{calculateCGPA()}</p>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl">
+                <GraduationCap className="text-white" size={32} />
               </div>
-              <div className="text-right">
-                <p className="text-sm opacity-80 uppercase font-semibold">Total Credits</p>
-                <p className="text-3xl font-bold">{totalCreditsCompleted()}</p>
+              <div>
+                <h1 className="text-4xl font-extrabold bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-transparent">
+                  CGPA Tracker
+                </h1>
+                <p className="text-gray-500 dark:text-gray-400">Advanced Academic Performance Monitor</p>
               </div>
             </div>
-          </div>
+            <div className="flex items-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+                className="p-3 rounded-full bg-white/20 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all duration-300 border border-white/20 dark:border-gray-700/50"
+              >
+                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleShareCGPA}
+                className="p-3 rounded-full bg-white/20 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all duration-300 border border-white/20 dark:border-gray-700/50"
+              >
+                <Share2 size={20} />
+              </motion.button>
+            </div>
+          </motion.header>
 
           {semesters.length > 0 ? (
-            <div className="space-y-4">
+            <>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <StatsCard
+                  title="Overall CGPA"
+                  value={cgpa}
+                  subtitle="Current Performance"
+                  icon={TrendingUp}
+                  gradient="bg-gradient-to-br from-sky-500 to-indigo-600"
+                  delay={0}
+                />
+                <StatsCard
+                  title="Total Credits"
+                  value={totalCredits}
+                  subtitle="Credits Completed"
+                  icon={BookOpen}
+                  gradient="bg-gradient-to-br from-indigo-500 to-violet-600"
+                  delay={0.1}
+                />
+                <StatsCard
+                  title="Semesters"
+                  value={semesters.length}
+                  subtitle="Completed"
+                  icon={GraduationCap}
+                  gradient="bg-gradient-to-br from-blue-600 to-indigo-700"
+                  delay={0.2}
+                />
+                <StatsCard
+                  title="Average SGPA"
+                  value={averageSGPA()}
+                  subtitle="Semester Average"
+                  icon={Award}
+                  gradient="bg-gradient-to-br from-violet-600 to-indigo-700"
+                  delay={0.3}
+                />
+              </div>
+
+              {/* Charts and Analytics */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <GradeChart semesters={semesters} />
+                <GradeDistribution semesters={semesters} />
+              </div>
+
+              {/* Goal Tracker and Export Options */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <GoalTracker currentCGPA={cgpa} />
+                <ExportOptions semesters={semesters} cgpa={cgpa} totalCredits={totalCredits} />
+                <QuickActions
+                  onCalculateRequired={handleCalculateRequired}
+                  onViewTrends={handleViewTrends}
+                  onViewAchievements={handleViewAchievements}
+                  onAddSemester={handleAddNewSemester}
+                />
+              </div>
+
+              {/* Semesters List */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.8 }}
+                className="space-y-4"
+              >
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Your Semesters</h2>
                 {semesters.map((semester, index) => (
-                  <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md transition-all duration-300">
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl border border-white/30 dark:border-slate-700/60"
+                  >
                     <div
-                      className="p-5 flex items-center gap-4 cursor-pointer"
+                      className="p-6 flex items-center gap-4 cursor-pointer"
                       onClick={() => handleToggleSemester(index)}
                     >
                       <div className="flex-grow">
-                        <h3 className="font-bold text-lg text-gray-900 dark:text-white">{semester.name}</h3>
+                        <h3 className="font-bold text-xl text-gray-900 dark:text-white">{semester.name}</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {semester.subjects.reduce((acc, s) => acc + (parseFloat(s.credits) || 0), 0)} Credits
+                          {semester.subjects.reduce((acc, s) => acc + (parseFloat(s.credits) || 0), 0)} Credits • {semester.subjects.length} Subjects
                         </p>
                       </div>
                       <div className="text-center">
-                        <p className="font-bold text-2xl text-indigo-500 dark:text-indigo-400">{semester.sgpa}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">SGPA</p>
+                        <p className="font-bold text-3xl bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
+                          {semester.sgpa}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">SGPA</p>
                       </div>
                       <div className="flex gap-2 items-center">
-                        <button onClick={(e) => { e.stopPropagation(); handleEditSemester(index); }} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"><Edit size={18} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteSemester(index); }} className="p-2 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"><Trash2 size={18} /></button>
-                        <ChevronDown className={`transform transition-transform duration-300 ${openSemesterIndex === index ? 'rotate-180' : ''}`} size={20} />
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); handleEditSemester(index); }}
+                          className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                        >
+                          <Edit size={18} />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteSemester(index); }}
+                          className="p-3 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </motion.button>
+                        <motion.div
+                          animate={{ rotate: openSemesterIndex === index ? 180 : 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <ChevronDown size={20} />
+                        </motion.div>
                       </div>
                     </div>
-                    {openSemesterIndex === index && (
-                      <div className="px-5 pb-5">
-                        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                          <div className="grid grid-cols-3 gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 px-2">
-                            <div className="col-span-1">Subject</div>
-                            <div className="text-center">Credits</div>
-                            <div className="text-center">Grade</div>
-                          </div>
-                          {semester.subjects.map((subject, sIndex) => (
-                            <div key={sIndex} className="grid grid-cols-3 gap-2 text-sm items-center py-2 px-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                              <div className="col-span-1 font-medium text-gray-800 dark:text-gray-200">{subject.name}</div>
-                              <div className="text-center text-gray-600 dark:text-gray-300">{subject.credits}</div>
-                              <div className="text-center font-semibold text-indigo-500 dark:text-indigo-400">{subject.grade.toUpperCase()}</div>
+                    
+                    <AnimatePresence>
+                      {openSemesterIndex === index && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-6 pb-6">
+                            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                              <div className="grid grid-cols-3 gap-4 text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 px-4">
+                                <div>Subject</div>
+                                <div className="text-center">Credits</div>
+                                <div className="text-center">Grade</div>
+                              </div>
+                              {semester.subjects.map((subject, sIndex) => (
+                                <motion.div
+                                  key={sIndex}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.3, delay: sIndex * 0.05 }}
+                                  className="grid grid-cols-3 gap-4 text-sm items-center py-3 px-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                >
+                                  <div className="font-medium text-gray-800 dark:text-gray-200">{subject.name}</div>
+                                  <div className="text-center text-gray-600 dark:text-gray-300 font-semibold">{subject.credits}</div>
+                                  <div className="text-center">
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+                                      {subject.grade.toUpperCase()}
+                                    </span>
+                                  </div>
+                                </motion.div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
                 ))}
-            </div>
+              </motion.div>
+            </>
           ) : (
             <EmptyState />
           )}
         </div>
 
+        {/* Modal */}
+        <AnimatePresence>
           {modalVisible && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4">
-              <div
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md flex flex-col transform transition-all duration-300"
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md flex flex-col border border-white/20 dark:border-gray-700/50"
                 style={{maxHeight: '90vh'}}
               >
-                <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                   <input
                     type="text"
-                    className="text-lg font-bold bg-transparent focus:outline-none w-full text-gray-900 dark:text-white"
+                    className="text-xl font-bold bg-transparent focus:outline-none w-full text-gray-900 dark:text-white"
                     value={currentSemester?.name}
                     onChange={(e) => setCurrentSemester(prev => ({...prev, name: e.target.value}))}
                   />
-                  <button onClick={() => setModalVisible(false)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"><X size={20} /></button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setModalVisible(false)}
+                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X size={20} />
+                  </motion.button>
                 </div>
 
-                <div className="p-5 flex-grow overflow-y-auto space-y-4">
-                    {currentSemester?.subjects.map((subject, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg relative transform transition-all duration-300"
+                <div className="p-6 flex-grow overflow-y-auto space-y-4">
+                  {currentSemester?.subjects.map((subject, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                      className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl relative backdrop-blur-sm border border-gray-200 dark:border-gray-600"
+                    >
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleDeleteSubject(index)}
+                        className="absolute top-3 right-3 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                       >
-                         <button onClick={() => handleDeleteSubject(index)} className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                          <Trash2 size={16} />
-                        </button>
-                        <div className="space-y-3">
+                        <Trash2 size={16} />
+                      </motion.button>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                            Subject Name
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g., Advanced Mathematics"
+                            value={subject.name}
+                            onChange={e => handleSubjectChange(index, 'name', e.target.value)}
+                            className={modalInputStyle}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                           <div>
-                             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Subject Name</label>
-                             <input type="text" placeholder="e.g., Physics" value={subject.name} onChange={e => handleSubjectChange(index, 'name', e.target.value)} className={modalInputStyle} />
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                              Credits
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="4"
+                              value={subject.credits}
+                              onChange={e => handleSubjectChange(index, 'credits', e.target.value)}
+                              className={`${modalInputStyle} text-center`}
+                            />
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
-                             <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Credits</label>
-                                <input type="number" placeholder="e.g., 4" value={subject.credits} onChange={e => handleSubjectChange(index, 'credits', e.target.value)} className={`${modalInputStyle} text-center`} />
-                             </div>
-                             <div>
-                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Grade</label>
-                                <input type="text" placeholder="e.g., A+" value={subject.grade} onChange={e => handleSubjectChange(index, 'grade', e.target.value)} className={`${modalInputStyle} text-center uppercase`} />
-                             </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                              Grade
+                            </label>
+                            <select
+                              value={subject.grade}
+                              onChange={e => handleSubjectChange(index, 'grade', e.target.value)}
+                              className={`${modalInputStyle} text-center uppercase`}
+                            >
+                              <option value="">Select</option>
+                              <option value="A+">A+</option>
+                              <option value="A">A</option>
+                              <option value="B">B</option>
+                              <option value="C">C</option>
+                              <option value="D">D</option>
+                              <option value="E">E</option>
+                              <option value="F">F</option>
+                            </select>
                           </div>
                         </div>
                       </div>
-                    ))}
+                    </motion.div>
+                  ))}
                 </div>
 
-                <div className="p-5 border-t border-gray-200 dark:border-gray-700 space-y-3">
-                  <button onClick={handleAddSubject} className="w-full text-center py-2.5 bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold rounded-lg transition-colors text-sm">
+                <div className="p-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleAddSubject}
+                    className="w-full text-center py-3 bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold rounded-xl transition-all duration-300 border border-gray-200 dark:border-gray-600"
+                  >
                     + Add Another Subject
-                  </button>
-                  <button onClick={handleSaveSemester} className="w-full text-center py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
-                    <Save size={18} /> {isEditing ? 'Update Semester' : 'Save Semester'}
-                  </button>
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleSaveSemester}
+                    className="w-full text-center py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg"
+                  >
+                    <Save size={20} />
+                    {isEditing ? 'Update Semester' : 'Save Semester'}
+                  </motion.button>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
+        </AnimatePresence>
 
+        {/* Floating Action Button - centered and non-overlapping */}
         {semesters.length > 0 && (
-           <button
-            onClick={handleAddNewSemester}
-            className="fixed bottom-6 right-6 bg-blue-500 text-white rounded-full p-4 shadow-lg hover:bg-blue-600 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 z-30"
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.8 }}
+            className="fixed inset-x-0 bottom-6 flex justify-center pointer-events-none z-30"
           >
-            <Plus size={24} />
-          </button>
+            <motion.button
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={handleAddNewSemester}
+              className="pointer-events-auto bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-full p-4 shadow-2xl hover:shadow-3xl transition-all duration-300 border-4 border-white/20"
+            >
+              <Plus size={28} />
+            </motion.button>
+          </motion.div>
         )}
       </div>
     </>
   );
 }
-
