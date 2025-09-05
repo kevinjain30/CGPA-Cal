@@ -13,12 +13,7 @@ import QuickActions from './components/QuickActions';
 
 // --- Grade to Point Mapping ---
 const gradePoints = {
-<<<<<<< HEAD
   'A+': 10, 'A': 9, 'B': 8, 'C': 7, 'D': 6, 'E': 5, 'F': 0, 'FAIL': 0,
-=======
-  'O': 10, 'A+': 10, 'A': 9, 'B+': 8, 'B': 8,
-  'C': 7, 'D': 6, 'E': 5, 'P': 4, 'F': 0, 'FAIL': 0,
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
 };
 
 // --- Custom Alert Component ---
@@ -62,10 +57,7 @@ export default function App() {
   const [alertMessage, setAlertMessage] = useState(null);
   const [theme, setTheme] = useState('light');
   const [openSemesterIndex, setOpenSemesterIndex] = useState(null);
-<<<<<<< HEAD
   const [confirmState, setConfirmState] = useState({ show: false, title: '', body: '', onConfirm: null });
-=======
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
 
   // --- Data Persistence ---
   useEffect(() => {
@@ -306,7 +298,6 @@ export default function App() {
   return (
     <>
       <AnimatedBackground />
-<<<<<<< HEAD
       <div className="relative bg-transparent min-h-screen font-sans text-gray-800 dark:text-gray-200 transition-colors duration-500">
         <CustomAlert message={alertMessage} onClose={() => setAlertMessage(null)} />
         <AnimatePresence>
@@ -345,12 +336,6 @@ export default function App() {
         </AnimatePresence>
         
         <div id="cgpa-dashboard" className="container mx-auto p-4 sm:p-6 max-w-7xl pb-28">
-=======
-      <div className="relative bg-transparent min-h-screen font-sans text-gray-800 dark:text-gray-200 transition-colors">
-        <CustomAlert message={alertMessage} onClose={() => setAlertMessage(null)} />
-        
-        <div id="cgpa-dashboard" className="container mx-auto p-4 sm:p-6 max-w-7xl">
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
           {/* Header */}
           <motion.header
             initial={{ opacity: 0, y: -20 }}
@@ -363,11 +348,7 @@ export default function App() {
                 <GraduationCap className="text-white" size={32} />
               </div>
               <div>
-<<<<<<< HEAD
                 <h1 className="text-4xl font-extrabold bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-transparent">
-=======
-                <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                   CGPA Tracker
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400">Advanced Academic Performance Monitor</p>
@@ -402,11 +383,7 @@ export default function App() {
                   value={cgpa}
                   subtitle="Current Performance"
                   icon={TrendingUp}
-<<<<<<< HEAD
                   gradient="bg-gradient-to-br from-sky-500 to-indigo-600"
-=======
-                  gradient="bg-gradient-to-br from-blue-500 to-indigo-600"
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                   delay={0}
                 />
                 <StatsCard
@@ -414,11 +391,7 @@ export default function App() {
                   value={totalCredits}
                   subtitle="Credits Completed"
                   icon={BookOpen}
-<<<<<<< HEAD
                   gradient="bg-gradient-to-br from-indigo-500 to-violet-600"
-=======
-                  gradient="bg-gradient-to-br from-green-500 to-emerald-600"
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                   delay={0.1}
                 />
                 <StatsCard
@@ -426,11 +399,7 @@ export default function App() {
                   value={semesters.length}
                   subtitle="Completed"
                   icon={GraduationCap}
-<<<<<<< HEAD
                   gradient="bg-gradient-to-br from-blue-600 to-indigo-700"
-=======
-                  gradient="bg-gradient-to-br from-purple-500 to-pink-600"
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                   delay={0.2}
                 />
                 <StatsCard
@@ -438,11 +407,7 @@ export default function App() {
                   value={averageSGPA()}
                   subtitle="Semester Average"
                   icon={Award}
-<<<<<<< HEAD
                   gradient="bg-gradient-to-br from-violet-600 to-indigo-700"
-=======
-                  gradient="bg-gradient-to-br from-orange-500 to-red-600"
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                   delay={0.3}
                 />
               </div>
@@ -479,11 +444,7 @@ export default function App() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-<<<<<<< HEAD
                     className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl border border-white/30 dark:border-slate-700/60"
-=======
-                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl border border-white/20 dark:border-gray-700/50"
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                   >
                     <div
                       className="p-6 flex items-center gap-4 cursor-pointer"
@@ -496,11 +457,7 @@ export default function App() {
                         </p>
                       </div>
                       <div className="text-center">
-<<<<<<< HEAD
                         <p className="font-bold text-3xl bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
-=======
-                        <p className="font-bold text-3xl bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                           {semester.sgpa}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">SGPA</p>
@@ -658,7 +615,6 @@ export default function App() {
                             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
                               Grade
                             </label>
-<<<<<<< HEAD
                             <select
                               value={subject.grade}
                               onChange={e => handleSubjectChange(index, 'grade', e.target.value)}
@@ -673,15 +629,6 @@ export default function App() {
                               <option value="E">E</option>
                               <option value="F">F</option>
                             </select>
-=======
-                            <input
-                              type="text"
-                              placeholder="A+"
-                              value={subject.grade}
-                              onChange={e => handleSubjectChange(index, 'grade', e.target.value)}
-                              className={`${modalInputStyle} text-center uppercase`}
-                            />
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                           </div>
                         </div>
                       </div>
@@ -713,7 +660,6 @@ export default function App() {
           )}
         </AnimatePresence>
 
-<<<<<<< HEAD
         {/* Floating Action Button - centered and non-overlapping */}
         {semesters.length > 0 && (
           <motion.div
@@ -731,21 +677,6 @@ export default function App() {
               <Plus size={28} />
             </motion.button>
           </motion.div>
-=======
-        {/* Floating Action Button */}
-        {semesters.length > 0 && (
-          <motion.button
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.3, delay: 1 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={handleAddNewSemester}
-            className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full p-4 shadow-2xl hover:shadow-3xl transition-all duration-300 z-30 border-4 border-white/20"
-          >
-            <Plus size={28} />
-          </motion.button>
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
         )}
       </div>
     </>
