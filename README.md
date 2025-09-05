@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![CGPA Tracker Logo](https://via.placeholder.com/200x80/4F46E5/FFFFFF?text=CGPA+TRACKER)
-
 **A modern, responsive web application to track and calculate your academic performance with ease**
 
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
@@ -48,27 +46,6 @@
 </table>
 
 ---
-
-## 🎬 Preview
-
-### 📱 Mobile & Desktop Views
-
-<div align="center">
-<table>
-<tr>
-<td align="center">
-<img src="https://via.placeholder.com/300x600/4F46E5/FFFFFF?text=Mobile+View" alt="Mobile View" width="250"/>
-<br/>
-<sub><b>📱 Mobile Experience</b></sub>
-</td>
-<td align="center">
-<img src="https://via.placeholder.com/600x400/4F46E5/FFFFFF?text=Desktop+View" alt="Desktop View" width="400"/>
-<br/>
-<sub><b>💻 Desktop Experience</b></sub>
-</td>
-</tr>
-</table>
-</div>
 
 ### 🌓 Theme Toggle Demo
 
@@ -137,29 +114,17 @@ Make sure you have the following installed:
 
 ### 1️⃣ Adding Your First Semester
 
-<div align="center">
-<img src="https://via.placeholder.com/500x300/10B981/FFFFFF?text=➕+Add+Semester" alt="Add Semester" width="400"/>
-</div>
-
 - Click the "**Add First Semester**" button
 - Enter semester name (e.g., "Semester 1", "Fall 2023")
 - Add subjects with their respective credits and grades
 
 ### 2️⃣ Managing Subjects
 
-<div align="center">
-<img src="https://via.placeholder.com/500x300/F59E0B/FFFFFF?text=📝+Subject+Management" alt="Subject Management" width="400"/>
-</div>
-
 - **Subject Name**: Enter the course name
 - **Credits**: Number of credit hours
 - **Grade**: Your achieved grade (O, A+, A, B+, B, C, D, P, F)
 
 ### 3️⃣ Viewing Your Progress
-
-<div align="center">
-<img src="https://via.placeholder.com/500x300/8B5CF6/FFFFFF?text=📊+Progress+View" alt="Progress View" width="400"/>
-</div>
 
 - **Overall CGPA**: Displayed prominently at the top
 - **Total Credits**: Sum of all completed credits
@@ -257,18 +222,6 @@ We love contributions! Here's how you can help:
 
 ---
 
-## 📄 License
-
-<div align="center">
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-
-</div>
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 ## 👨‍💻 Author
 
 <div align="center">
@@ -280,44 +233,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Your Name**
 
 *Full Stack Developer passionate about creating beautiful, functional applications*
-
-</div>
-
----
-
-## ⭐ Show Your Support
-
-If this project helped you, please consider giving it a ⭐ star on GitHub!
-
-<div align="center">
-
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/cgpa-tracker&type=Date)](https://star-history.com/#yourusername/cgpa-tracker&Date)
-
-</div>
-
----
-
-## 📞 Support
-
-<div align="center">
-
-Having trouble? We're here to help!
-
-[![Issues](https://img.shields.io/badge/Issues-Report%20Bug-red?style=for-the-badge&logo=github)](https://github.com/yourusername/cgpa-tracker/issues)
-[![Discussions](https://img.shields.io/badge/Discussions-Ask%20Question-blue?style=for-the-badge&logo=github)](https://github.com/yourusername/cgpa-tracker/discussions)
-
-</div>
-
----
-
-<div align="center">
-
-### 🚀 Ready to track your academic journey?
-
-**[Get Started Now](https://your-demo-link.com) • [View Source](https://github.com/yourusername/cgpa-tracker) • [Report Bug](https://github.com/yourusername/cgpa-tracker/issues)**
-
----
-
-*Made with ❤️ by developers, for students*
 
 </div>
