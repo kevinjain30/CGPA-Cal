@@ -5,11 +5,18 @@ const GradeDistribution = ({ semesters }) => {
   const gradeDistribution = useMemo(() => {
     const distribution = {};
     const gradeColors = {
+<<<<<<< HEAD
       'A+': '#059669', 'A': '#3B82F6',
       'B': '#8B5CF6', 'C': '#EC4899',
       'D': '#F59E0B', 'E': '#EF4444', 'F': '#374151'
     };
     const gradePoints = { 'A+': 10, 'A': 9, 'B': 8, 'C': 7, 'D': 6, 'E': 5, 'F': 0 };
+=======
+      'O': '#10B981', 'A+': '#059669', 'A': '#3B82F6',
+      'B+': '#6366F1', 'B': '#8B5CF6', 'C': '#EC4899',
+      'D': '#F59E0B', 'E': '#EF4444', 'P': '#6B7280', 'F': '#374151'
+    };
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
     
     semesters.forEach(semester => {
       semester.subjects.forEach(subject => {
@@ -22,6 +29,7 @@ const GradeDistribution = ({ semesters }) => {
       .map(([grade, count]) => ({
         grade,
         count,
+<<<<<<< HEAD
         color: gradeColors[grade] || '#6B7280',
         points: gradePoints[grade] ?? -1
       }))
@@ -31,6 +39,11 @@ const GradeDistribution = ({ semesters }) => {
         if (b.count !== a.count) return b.count - a.count;
         return a.grade.localeCompare(b.grade);
       });
+=======
+        color: gradeColors[grade] || '#6B7280'
+      }))
+      .sort((a, b) => b.count - a.count);
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
   }, [semesters]);
 
   const totalSubjects = gradeDistribution.reduce((sum, item) => sum + item.count, 0);
@@ -42,7 +55,11 @@ const GradeDistribution = ({ semesters }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.4 }}
+<<<<<<< HEAD
       className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
+=======
+      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50"
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
     >
       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Grade Distribution</h3>
       

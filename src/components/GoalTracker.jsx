@@ -30,10 +30,17 @@ const GoalTracker = ({ currentCGPA }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.5 }}
+<<<<<<< HEAD
       className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
     >
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg">
+=======
+      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50"
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
           <Target className="text-white" size={20} />
         </div>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white">CGPA Goal</h3>
@@ -53,7 +60,11 @@ const GoalTracker = ({ currentCGPA }) => {
           />
           <button
             onClick={handleSaveGoal}
+<<<<<<< HEAD
             className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-lg hover:from-sky-600 hover:to-indigo-700 transition-all duration-300 font-medium"
+=======
+            className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300 font-medium"
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
           >
             Set Goal
           </button>
@@ -81,8 +92,13 @@ const GoalTracker = ({ currentCGPA }) => {
                 transition={{ duration: 1.5, ease: "easeOut" }}
                 className={`h-3 rounded-full ${
                   isGoalAchieved 
+<<<<<<< HEAD
                     ? 'bg-gradient-to-r from-emerald-500 to-teal-600' 
                     : 'bg-gradient-to-r from-sky-500 to-indigo-600'
+=======
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
+                    : 'bg-gradient-to-r from-orange-500 to-red-500'
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                 }`}
               />
             </div>
@@ -91,10 +107,17 @@ const GoalTracker = ({ currentCGPA }) => {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+<<<<<<< HEAD
                 className="flex items-center gap-2 p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg"
               >
                 <Award className="text-emerald-600 dark:text-emerald-400" size={20} />
                 <span className="text-emerald-800 dark:text-emerald-300 font-medium">
+=======
+                className="flex items-center gap-2 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg"
+              >
+                <Award className="text-green-600 dark:text-green-400" size={20} />
+                <span className="text-green-800 dark:text-green-300 font-medium">
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
                   🎉 Goal Achieved! Congratulations!
                 </span>
               </motion.div>

@@ -8,28 +8,44 @@ const QuickActions = ({ onCalculateRequired, onViewTrends, onViewAchievements, o
       icon: Calculator,
       label: 'Calculate Required',
       description: 'Find grades needed for target CGPA',
+<<<<<<< HEAD
       color: 'from-sky-500 to-indigo-600',
+=======
+      color: 'from-blue-500 to-cyan-500',
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
       onClick: onCalculateRequired
     },
     {
       icon: TrendingUp,
       label: 'View Trends',
       description: 'Analyze your performance',
+<<<<<<< HEAD
       color: 'from-indigo-500 to-violet-600',
+=======
+      color: 'from-green-500 to-emerald-500',
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
       onClick: onViewTrends
     },
     {
       icon: Award,
       label: 'Achievements',
       description: 'View your milestones',
+<<<<<<< HEAD
       color: 'from-blue-600 to-indigo-700',
+=======
+      color: 'from-yellow-500 to-orange-500',
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
       onClick: onViewAchievements
     },
     {
       icon: BookOpen,
       label: 'Add Semester',
       description: 'Record new semester',
+<<<<<<< HEAD
       color: 'from-cyan-500 to-sky-600',
+=======
+      color: 'from-purple-500 to-pink-500',
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
       onClick: onAddSemester
     }
   ];

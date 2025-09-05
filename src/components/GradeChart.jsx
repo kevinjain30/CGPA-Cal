@@ -20,7 +20,11 @@ const GradeChart = ({ semesters }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.3 }}
+<<<<<<< HEAD
       className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
+=======
+      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50"
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
     >
       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">SGPA Trend</h3>
       
@@ -82,8 +86,14 @@ const GradeChart = ({ semesters }) => {
           {/* Gradient definition */}
           <defs>
             <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+<<<<<<< HEAD
               <stop offset="0%" stopColor="#0EA5E9" />
               <stop offset="100%" stopColor="#4F46E5" />
+=======
+              <stop offset="0%" stopColor="#3B82F6" />
+              <stop offset="50%" stopColor="#8B5CF6" />
+              <stop offset="100%" stopColor="#EC4899" />
+>>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
             </linearGradient>
           </defs>
         </svg>
