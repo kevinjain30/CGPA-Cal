@@ -1,15 +1,675 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Edit, Save, X, Share2, Sun, Moon, ChevronDown, GraduationCap, BookOpen, TrendingUp, Award, Calculator } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, X, Share2, Sun, Moon, ChevronDown, GraduationCap, BookOpen, TrendingUp, Award, User, Target, Download, Calculator } from 'lucide-react';
 
-// Components
-import AnimatedBackground from './components/AnimatedBackground';
-import StatsCard from './components/StatsCard';
-import GradeChart from './components/GradeChart';
-import GradeDistribution from './components/GradeDistribution';
-import GoalTracker from './components/GoalTracker';
-import ExportOptions from './components/ExportOptions';
-import QuickActions from './components/QuickActions';
+// --- Libraries from CDN ---
+const { jsPDF } = window.jspdf;
+const { Capacitor } = window;
+const { Filesystem, Directory } = window.Capacitor.Plugins;
+
+
+// --- AnimatedBackground Component ---
+const AnimatedBackground = () => {
+  return (
+    <div className="fixed inset-0 -z-10 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-sky-50 via-indigo-50 to-violet-50 dark:from-gray-950 dark:via-slate-900 dark:to-indigo-950 transition-all duration-1000" />
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-sky-400/15 to-indigo-400/15 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute top-3/4 right-1/4 w-96 h-96 bg-gradient-to-r from-indigo-400/15 to-violet-400/15 rounded-full blur-3xl animate-pulse delay-1000" />
+      <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-gradient-to-r from-cyan-400/15 to-sky-400/15 rounded-full blur-3xl animate-pulse delay-2000" />
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2260%22%20height=%2260%22%20viewBox=%220%200%2060%2060%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22none%22%20fill-rule=%22evenodd%22%3E%3Cg%20fill=%22%239C92AC%22%20fill-opacity=%220.04%22%3E%3Ccircle%20cx=%2230%22%20cy=%2230%22%20r=%221.5%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] dark:opacity-30" />
+    </div>
+  );
+};
+
+// --- StatsCard Component ---
+const StatsCard = ({ title, value, subtitle, icon: Icon, gradient, delay = 0 }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay }}
+      className={`relative overflow-hidden rounded-2xl p-6 text-white shadow-xl ${gradient} transform hover:scale-105 transition-all duration-300`}
+    >
+      <div className="absolute top-0 right-0 -mt-4 -mr-4 opacity-20">
+        <Icon size={80} />
+      </div>
+      <div className="relative z-10">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium opacity-90 uppercase tracking-wide">{title}</p>
+            <p className="text-4xl font-bold mt-2 tracking-tight">{value}</p>
+            {subtitle && <p className="text-sm opacity-80 mt-1">{subtitle}</p>}
+          </div>
+          <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
+            <Icon size={24} />
+          </div>
+        </div>
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
+    </motion.div>
+  );
+};
+
+// --- GradeChart Component ---
+const GradeChart = ({ semesters }) => {
+    const chartData = React.useMemo(() => {
+      return semesters.map((sem) => ({
+        semester: sem.name,
+        sgpa: parseFloat(sem.sgpa),
+      }));
+    }, [semesters]);
+  
+    const maxSGPA = 10;
+  
+    if (chartData.length === 0) return null;
+  
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
+      >
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">SGPA Trend</h3>
+        
+        <div className="relative h-64">
+          <svg className="w-full h-full" viewBox="0 0 400 200">
+            {/* Grid lines */}
+            {[0, 2, 4, 6, 8, 10].map(value => (
+              <g key={value}>
+                <line
+                  x1="40"
+                  y1={180 - (value / maxSGPA) * 160}
+                  x2="380"
+                  y2={180 - (value / maxSGPA) * 160}
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  className="text-gray-200 dark:text-gray-700"
+                  strokeDasharray="2,2"
+                />
+                <text
+                  x="30"
+                  y={185 - (value / maxSGPA) * 160}
+                  className="text-xs fill-gray-500 dark:fill-gray-400"
+                  textAnchor="end"
+                >
+                  {value}
+                </text>
+              </g>
+            ))}
+            
+            {/* Chart line */}
+            <motion.path
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 2, ease: "easeInOut" }}
+              d={`M ${chartData.map((point, index) => 
+                `${50 + (index * (300 / Math.max(chartData.length - 1, 1)))},${180 - (point.sgpa / maxSGPA) * 160}`
+              ).join(' L ')}`}
+              fill="none"
+              stroke="url(#gradient)"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            
+            {/* Data points */}
+            {chartData.map((point, index) => (
+              <motion.circle
+                key={index}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
+                cx={50 + (index * (300 / Math.max(chartData.length - 1, 1)))}
+                cy={180 - (point.sgpa / maxSGPA) * 160}
+                r="6"
+                fill="url(#gradient)"
+                className="drop-shadow-lg"
+              />
+            ))}
+            
+            {/* Gradient definition */}
+            <defs>
+              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#0EA5E9" />
+                <stop offset="100%" stopColor="#4F46E5" />
+              </linearGradient>
+            </defs>
+          </svg>
+          
+          {/* X-axis labels */}
+          <div className="flex justify-between mt-4 px-12">
+            {chartData.map((point, index) => (
+              <span key={index} className="text-xs text-gray-500 dark:text-gray-400 transform -rotate-45 origin-left">
+                {point.semester}
+              </span>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    );
+};
+
+// --- GradeDistribution Component ---
+const GradeDistribution = ({ semesters }) => {
+    const gradeDistribution = React.useMemo(() => {
+      const distribution = {};
+      const gradeColors = {
+        'A+': '#059669', 'A': '#3B82F6',
+        'B': '#8B5CF6', 'C': '#EC4899',
+        'D': '#F59E0B', 'E': '#EF4444', 'F': '#374151'
+      };
+      const gradePoints = { 'A+': 10, 'A': 9, 'B': 8, 'C': 7, 'D': 6, 'E': 5, 'F': 0 };
+      
+      semesters.forEach(semester => {
+        semester.subjects.forEach(subject => {
+          const grade = subject.grade.toUpperCase();
+          distribution[grade] = (distribution[grade] || 0) + 1;
+        });
+      });
+      
+      return Object.entries(distribution)
+        .map(([grade, count]) => ({
+          grade,
+          count,
+          color: gradeColors[grade] || '#6B7280',
+          points: gradePoints[grade] ?? -1
+        }))
+        .sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points;
+          if (b.count !== a.count) return b.count - a.count;
+          return a.grade.localeCompare(b.grade);
+        });
+    }, [semesters]);
+  
+    const totalSubjects = gradeDistribution.reduce((sum, item) => sum + item.count, 0);
+  
+    if (totalSubjects === 0) return null;
+  
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
+      >
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Grade Distribution</h3>
+        
+        <div className="space-y-4">
+          {gradeDistribution.map((item, index) => (
+            <motion.div
+              key={item.grade}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 * index }}
+              className="flex items-center gap-4"
+            >
+              <div className="w-12 text-center">
+                <span className="font-bold text-lg" style={{ color: item.color }}>
+                  {item.grade}
+                </span>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {item.count} subject{item.count !== 1 ? 's' : ''}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {((item.count / totalSubjects) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(item.count / totalSubjects) * 100}%` }}
+                    transition={{ duration: 1, delay: 0.2 + index * 0.1 }}
+                    className="h-2 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+    );
+};
+
+// --- GoalTracker Component ---
+const GoalTracker = ({ currentCGPA, isGuestMode }) => {
+    const [targetCGPA, setTargetCGPA] = useState('');
+    const [savedGoal, setSavedGoal] = useState(null);
+  
+    useEffect(() => {
+      const saved = localStorage.getItem('cgpa_goal');
+      if (saved) {
+        setSavedGoal(parseFloat(saved));
+        setTargetCGPA(saved);
+      }
+    }, []);
+  
+    if (isGuestMode) {
+      return (
+          <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60 flex flex-col items-center justify-center text-center h-full"
+          >
+              <User className="text-gray-400 dark:text-gray-500 mb-4" size={40} />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Guest Mode Active</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Goal tracking is disabled in Guest Mode.
+              </p>
+          </motion.div>
+      );
+    }
+  
+    const handleSaveGoal = () => {
+      const goal = parseFloat(targetCGPA);
+      if (goal >= 0 && goal <= 10) {
+        setSavedGoal(goal);
+        localStorage.setItem('cgpa_goal', goal.toString());
+      }
+    };
+  
+    const progress = savedGoal ? Math.min((parseFloat(currentCGPA) / savedGoal) * 100, 100) : 0;
+    const isGoalAchieved = savedGoal && parseFloat(currentCGPA) >= savedGoal;
+  
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.5 }}
+        className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg">
+            <Target className="text-white" size={20} />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">CGPA Goal</h3>
+        </div>
+  
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <input
+              type="number"
+              min="0"
+              max="10"
+              step="0.01"
+              value={targetCGPA}
+              onChange={(e) => setTargetCGPA(e.target.value)}
+              placeholder="Set your target CGPA"
+              className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-gray-900 dark:text-white"
+            />
+            <button
+              onClick={handleSaveGoal}
+              className="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-lg hover:from-sky-600 hover:to-indigo-700 transition-all duration-300 font-medium"
+            >
+              Set Goal
+            </button>
+          </div>
+  
+          {savedGoal && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Current: {currentCGPA} / Target: {savedGoal}
+                </span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {progress.toFixed(1)}%
+                </span>
+              </div>
+  
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  className={`h-3 rounded-full ${
+                    isGoalAchieved 
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600' 
+                      : 'bg-gradient-to-r from-sky-500 to-indigo-600'
+                  }`}
+                />
+              </div>
+  
+              {isGoalAchieved && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg"
+                >
+                  <Award className="text-emerald-600 dark:text-emerald-400" size={20} />
+                  <span className="text-emerald-800 dark:text-emerald-300 font-medium">
+                    🎉 Goal Achieved! Congratulations!
+                  </span>
+                </motion.div>
+              )}
+  
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <TrendingUp size={16} />
+                <span>
+                  {savedGoal > parseFloat(currentCGPA) 
+                    ? `${(savedGoal - parseFloat(currentCGPA)).toFixed(2)} points to go!`
+                    : 'You\'ve exceeded your goal!'
+                  }
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+    );
+};
+
+// --- ExportOptions Component ---
+const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
+    const [isExporting, setIsExporting] = useState(false);
+  
+    const exportAsPDF = async () => {
+      setIsExporting(true);
+      try {
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 40;
+        let cursorY = margin;
+  
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const ddmmyyyy = `${pad(now.getDate())}:${pad(now.getMonth() + 1)}:${now.getFullYear()}`;
+        const ddmmyyyyFile = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`;
+  
+        const addHeading = (text, size = 18) => {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(size);
+          doc.text(text, margin, cursorY);
+          cursorY += 24;
+        };
+  
+        const addText = (text, size = 12, bold = false) => {
+          doc.setFont('helvetica', bold ? 'bold' : 'normal');
+          doc.setFontSize(size);
+          const lines = doc.splitTextToSize(text, pageWidth - margin * 2);
+          doc.text(lines, margin, cursorY);
+          cursorY += lines.length * (size + 4) * 0.9;
+        };
+  
+        const addDivider = () => {
+          doc.setDrawColor(200);
+          doc.line(margin, cursorY, pageWidth - margin, cursorY);
+          cursorY += 12;
+        };
+  
+        // Header band
+        doc.setFillColor(14, 165, 233);
+        doc.roundedRect(0, 0, pageWidth, 70, 0, 0, 'F');
+        doc.setFillColor(79, 70, 229);
+        doc.roundedRect(0, 66, pageWidth, 4, 0, 0, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('CGPA Report', margin, 44);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(11);
+        doc.text(`Generated: ${ddmmyyyy}`, pageWidth - margin - 140, 44);
+        doc.setTextColor(0, 0, 0);
+        cursorY = 100;
+        addDivider();
+  
+        // Summary table block
+        addHeading('Summary', 14);
+        const rowH = 24;
+        const colW = (pageWidth - margin * 2) / 4;
+        const cells = [
+          { label: 'Overall CGPA', value: String(cgpa) },
+          { label: 'Total Credits', value: String(totalCredits) },
+          { label: 'Semesters', value: String(semesters.length) },
+        ];
+        const avg = semesters.length > 0 ? (semesters.reduce((s, sem) => s + parseFloat(sem.sgpa || 0), 0) / semesters.length).toFixed(2) : '0.00';
+        cells.push({ label: 'Average SGPA', value: String(avg) });
+  
+        doc.setFontSize(11);
+        cells.forEach((c, i) => {
+          const x = margin + i * colW;
+          doc.setDrawColor(220);
+          doc.roundedRect(x, cursorY, colW - 10, rowH, 6, 6);
+          doc.setFont('helvetica', 'normal');
+          doc.text(c.label, x + 10, cursorY + 14);
+          doc.setFont('helvetica', 'bold');
+          doc.text(c.value, x + 10, cursorY + 14 + 12);
+        });
+        cursorY += rowH + 18;
+        addDivider();
+  
+        const subjectColWidth = 300;
+        const gradeColWidth = 60;
+        const creditsColWidth = 70;
+        const pointsColWidth = 70;
+        const colX = [
+          margin,
+          margin + subjectColWidth,
+          margin + subjectColWidth + gradeColWidth,
+          margin + subjectColWidth + gradeColWidth + creditsColWidth
+        ];
+  
+        const drawHeaderRow = () => {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.text('Subject', colX[0], cursorY);
+          doc.text('Grade', colX[1] + gradeColWidth - 4, cursorY, { align: 'right' });
+          doc.text('Credits', colX[2] + creditsColWidth - 4, cursorY, { align: 'right' });
+          doc.text('Points', colX[3] + pointsColWidth - 4, cursorY, { align: 'right' });
+          cursorY += 12;
+          doc.setDrawColor(200);
+          doc.line(margin, cursorY, pageWidth - margin, cursorY);
+          cursorY += 6;
+          doc.setFont('helvetica', 'normal');
+        };
+  
+        semesters.forEach((sem, si) => {
+          if (cursorY > pageHeight - 140) {
+            doc.addPage();
+            cursorY = margin;
+          }
+  
+          if (si > 0) {
+            doc.setDrawColor(120, 120, 120);
+            doc.setLineWidth(0.8);
+            doc.line(margin, cursorY - 12, pageWidth - margin, cursorY - 12);
+            doc.setLineWidth(0.2);
+          }
+  
+          addHeading(`${sem.name}`, 13);
+          addText(`SGPA: ${sem.sgpa}`);
+          drawHeaderRow();
+  
+          sem.subjects.forEach((sub, idx) => {
+            if (cursorY > pageHeight - 80) {
+              doc.addPage();
+              cursorY = margin;
+              drawHeaderRow();
+            }
+  
+            const subjectText = doc.splitTextToSize(sub.name || '-', subjectColWidth - 10);
+            const lineHeight = 14;
+            const rowHeight = Math.max(lineHeight, subjectText.length * lineHeight);
+  
+            if (idx % 2 === 0) {
+              doc.setFillColor(245, 247, 250);
+              doc.rect(margin - 4, cursorY - 10, pageWidth - margin * 2 + 8, rowHeight + 6, 'F');
+            }
+  
+            doc.text(subjectText, colX[0], cursorY);
+            const grade = (sub.grade || '').toUpperCase();
+            const gradePoints = { 'A+': 10, 'A': 9, 'B': 8, 'C': 7, 'D': 6, 'E': 5, 'F': 0 };
+            doc.text(grade || '-', colX[1] + gradeColWidth - 4, cursorY, { align: 'right' });
+            doc.text(String(sub.credits || '-'), colX[2] + creditsColWidth - 4, cursorY, { align: 'right' });
+            doc.text(String(gradePoints[grade] ?? '-'), colX[3] + pointsColWidth - 4, cursorY, { align: 'right' });
+  
+            cursorY += rowHeight;
+          });
+  
+          cursorY += 10;
+        });
+  
+        const fileName = `cgpa-report-${ddmmyyyyFile}.pdf`;
+  
+        if (Capacitor.isNativePlatform()) {
+          try {
+            await Filesystem.requestPermissions();
+          } catch {}
+          const pdfArrayBuffer = doc.output('arraybuffer');
+          const uint8Array = new Uint8Array(pdfArrayBuffer);
+          let binary = '';
+          for (let i = 0; i < uint8Array.length; i++) {
+            binary += String.fromCharCode(uint8Array[i]);
+          }
+          const base64 = btoa(binary);
+          await Filesystem.writeFile({
+            path: `CGPA Reports/${fileName}`,
+            data: base64,
+            directory: Directory.Documents,
+            recursive: true,
+          });
+          alert(`Saved to Documents/CGPA Reports/${fileName}`);
+        } else {
+          doc.save(fileName);
+        }
+      } catch (error) {
+        console.error('Error exporting PDF:', error);
+      } finally {
+        setIsExporting(false);
+      }
+    };
+  
+    const shareProgress = async () => {
+      const shareText = `🎓 My Academic Progress Update!\n\n📊 Current CGPA: ${cgpa}\n📚 Total Credits: ${totalCredits}\n🎯 Semesters Completed: ${semesters.length}\n\n#AcademicProgress #CGPA #StudentLife`;
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'My CGPA Progress',
+            text: shareText
+          });
+        } catch (error) {
+          console.log('Share cancelled');
+        }
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        alert('Progress copied to clipboard!');
+      }
+    };
+  
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+        className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg">
+            <Download className="text-white" size={20} />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Export & Share</h3>
+        </div>
+  
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={exportAsPDF}
+            disabled={isExporting}
+            className="flex items-center gap-2 p-3 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors disabled:opacity-50"
+          >
+            <Download size={18} />
+            <span className="text-sm font-medium">
+              {isExporting ? 'Exporting...' : 'PDF'}
+            </span>
+          </button>
+  
+          <button
+            onClick={shareProgress}
+            className="flex items-center gap-2 p-3 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded-lg hover:bg-cyan-200 dark:hover:bg-cyan-900/50 transition-colors"
+          >
+            <Share2 size={18} />
+            <span className="text-sm font-medium">Share</span>
+          </button>
+        </div>
+      </motion.div>
+    );
+};
+
+// --- QuickActions Component ---
+const QuickActions = ({ onCalculateRequired, onViewTrends, onViewAchievements, onAddSemester }) => {
+    const actions = [
+      {
+        icon: Calculator,
+        label: 'Target Calculator',
+        description: 'Find grades needed for a target CGPA',
+        color: 'from-sky-500 to-indigo-600',
+        onClick: onCalculateRequired
+      },
+      {
+        icon: TrendingUp,
+        label: 'View Trends',
+        description: 'Analyze your performance',
+        color: 'from-indigo-500 to-violet-600',
+        onClick: onViewTrends
+      },
+      {
+        icon: Award,
+        label: 'Achievements',
+        description: 'View your milestones',
+        color: 'from-blue-600 to-indigo-700',
+        onClick: onViewAchievements
+      },
+      {
+        icon: BookOpen,
+        label: 'Add Semester',
+        description: 'Record new semester',
+        color: 'from-cyan-500 to-sky-600',
+        onClick: onAddSemester
+      }
+    ];
+  
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.7 }}
+        className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50"
+      >
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {actions.map((action, index) => (
+            <motion.button
+              key={action.label}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.1 * index }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={action.onClick}
+              className={`p-4 rounded-xl bg-gradient-to-r ${action.color} text-white shadow-lg hover:shadow-xl transition-all duration-300 group`}
+            >
+              <div className="flex flex-col items-center text-center space-y-2">
+                <action.icon size={24} className="group-hover:scale-110 transition-transform duration-300" />
+                <div>
+                  <p className="font-semibold text-sm">{action.label}</p>
+                  <p className="text-xs opacity-90">{action.description}</p>
+                </div>
+              </div>
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+    );
+};
 
 // --- Grade to Point Mapping ---
 const gradePoints = {
@@ -34,7 +694,7 @@ const CustomAlert = ({ message, onClose }) => {
           className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl w-full max-w-sm text-center border border-white/20 dark:border-gray-700/50"
         >
           <h3 className="text-lg font-bold text-gray-900 dark:text-white">{message.title}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 mb-6">{message.body}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 mb-6 whitespace-pre-wrap">{message.body}</p>
           <button 
             onClick={onClose} 
             className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold py-2 px-6 rounded-lg w-full hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105"
@@ -51,6 +711,9 @@ const CustomAlert = ({ message, onClose }) => {
 export default function App() {
   const [semesters, setSemesters] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [reqModalVisible, setReqModalVisible] = useState(false);
+  const [targetCgpaForCalc, setTargetCgpaForCalc] = useState('');
+  const [remainingCreditsForCalc, setRemainingCreditsForCalc] = useState('');
   const [currentSemester, setCurrentSemester] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
@@ -58,6 +721,7 @@ export default function App() {
   const [theme, setTheme] = useState('light');
   const [openSemesterIndex, setOpenSemesterIndex] = useState(null);
   const [confirmState, setConfirmState] = useState({ show: false, title: '', body: '', onConfirm: null });
+  const [isGuestMode, setIsGuestMode] = useState(false);
 
   // --- Data Persistence ---
   useEffect(() => {
@@ -73,19 +737,55 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('@semesters_data', JSON.stringify(semesters));
-    } catch (e) {
-      console.error("Failed to save data to storage", e);
-      setAlertMessage({ title: "Save Error", body: "Could not save your changes." });
+    if (!isGuestMode) {
+      try {
+        localStorage.setItem('@semesters_data', JSON.stringify(semesters));
+      } catch (e) {
+        console.error("Failed to save data to storage", e);
+        setAlertMessage({ title: "Save Error", body: "Could not save your changes." });
+      }
     }
-  }, [semesters]);
+  }, [semesters, isGuestMode]);
 
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // --- Guest Mode Handlers ---
+  const handleToggleGuestMode = () => {
+    if (isGuestMode) {
+        handleExitGuestMode();
+    } else {
+        handleEnterGuestMode();
+    }
+  };
+
+  const handleEnterGuestMode = () => {
+    setConfirmState({
+      show: true,
+      title: 'Enter Guest Mode?',
+      body: 'This will start a temporary session to calculate CGPA. Your current data will be hidden but not deleted. Do you want to continue?',
+      onConfirm: () => {
+        setIsGuestMode(true);
+        setSemesters([]); 
+        setOpenSemesterIndex(null); 
+      }
+    });
+  };
+
+  const handleExitGuestMode = () => {
+    setIsGuestMode(false);
+    try {
+      const storedSemesters = JSON.parse(localStorage.getItem('@semesters_data') || '[]');
+      setSemesters(storedSemesters);
+    } catch (e) {
+      console.error("Failed to load data from storage", e);
+      setAlertMessage({ title: "Load Error", body: "Could not load your saved data." });
+      setSemesters([]); 
+    }
+  };
 
   // --- Calculation Logic ---
   const calculateSGPA = useCallback((subjects) => {
@@ -131,6 +831,41 @@ export default function App() {
     const totalSGPA = semesters.reduce((sum, sem) => sum + parseFloat(sem.sgpa || 0), 0);
     return (totalSGPA / semesters.length).toFixed(2);
   }, [semesters]);
+  
+  const handleCalculateRequiredCgpa = () => {
+    const currentCgpa = parseFloat(calculateCGPA());
+    const currentTotalCredits = totalCreditsCompleted();
+    const targetCgpa = parseFloat(targetCgpaForCalc);
+    const remainingCredits = parseFloat(remainingCreditsForCalc);
+
+    if (isNaN(targetCgpa) || isNaN(remainingCredits) || targetCgpa <= 0 || remainingCredits <= 0) {
+        setAlertMessage({ title: "Invalid Input", body: "Please enter valid numbers for target CGPA and remaining credits." });
+        return;
+    }
+    if (targetCgpa > 10) {
+        setAlertMessage({ title: "Invalid Target", body: "Target CGPA cannot be greater than 10." });
+        return;
+    }
+
+    const currentTotalPoints = currentCgpa * currentTotalCredits;
+    const requiredTotalPoints = targetCgpa * (currentTotalCredits + remainingCredits);
+    const neededPoints = requiredTotalPoints - currentTotalPoints;
+    const requiredAverageSgpa = neededPoints / remainingCredits;
+
+    let resultMessage = `To achieve a CGPA of ${targetCgpa.toFixed(2)},\nyou need to score an average SGPA of:\n\n${requiredAverageSgpa.toFixed(2)}`;
+    
+    if (requiredAverageSgpa > 10) {
+        resultMessage += "\n\nThis target seems impossible. Please double-check your values.";
+    } else if (requiredAverageSgpa < 0) {
+        resultMessage += "\n\nThis target is easily achievable based on your current grades!";
+    }
+
+    setAlertMessage({ title: "Target Calculation", body: resultMessage });
+    setReqModalVisible(false);
+    setTargetCgpaForCalc('');
+    setRemainingCreditsForCalc('');
+  };
+
 
   // --- Handlers for Semester Operations ---
   const handleAddNewSemester = () => {
@@ -214,13 +949,6 @@ export default function App() {
   };
 
   // Quick Actions Handlers
-  const handleCalculateRequired = () => {
-    setAlertMessage({ 
-      title: "Feature Coming Soon!", 
-      body: "Grade calculator for target CGPA will be available in the next update." 
-    });
-  };
-
   const handleViewTrends = () => {
     setAlertMessage({ 
       title: "Trends Available!", 
@@ -265,7 +993,7 @@ export default function App() {
         transition={{ delay: 0.4 }}
         className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4"
       >
-        Start Your Academic Journey
+        {isGuestMode ? 'Guest Calculator' : 'Start Your Academic Journey'}
       </motion.h3>
       <motion.p
         initial={{ opacity: 0 }}
@@ -273,7 +1001,10 @@ export default function App() {
         transition={{ delay: 0.6 }}
         className="text-lg text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto"
       >
-        Track your grades, monitor your progress, and achieve your academic goals with our advanced CGPA tracker.
+        {isGuestMode 
+          ? "Add semesters and subjects to calculate CGPA. This data is temporary and won't be saved."
+          : "Track your grades, monitor your progress, and achieve your academic goals with our advanced CGPA tracker."
+        }
       </motion.p>
       <motion.button
         initial={{ opacity: 0, y: 20 }}
@@ -285,7 +1016,7 @@ export default function App() {
         className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold py-4 px-8 rounded-2xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl"
       >
         <Plus size={24} />
-        Add Your First Semester
+        Add First Semester
       </motion.button>
     </motion.div>
   );
@@ -327,10 +1058,33 @@ export default function App() {
                     onClick={() => { confirmState.onConfirm && confirmState.onConfirm(); setConfirmState({ show: false, title: '', body: '', onConfirm: null }); }}
                     className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold py-2 px-4 rounded-lg hover:from-red-600 hover:to-rose-700 transition-all"
                   >
-                    Delete
+                    {confirmState.title.toLowerCase().includes('delete') ? 'Delete' : 'Confirm'}
                   </button>
                 </div>
               </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {isGuestMode && (
+            <motion.div
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              className="sticky top-0 left-0 right-0 z-40 bg-yellow-400/90 dark:bg-yellow-600/90 backdrop-blur-sm p-2 text-center shadow-lg"
+            >
+              <div className="container mx-auto flex justify-center items-center gap-4">
+                <p className="text-xs font-semibold text-yellow-900 dark:text-yellow-50">
+                  Guest Mode is ON. Data will not be saved.
+                </p>
+                <button
+                  onClick={handleExitGuestMode}
+                  className="bg-white/50 dark:bg-black/20 text-yellow-900 dark:text-white font-bold py-1 px-3 rounded-full text-xs hover:bg-white/70 dark:hover:bg-black/40 transition-all"
+                >
+                  Exit
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -341,7 +1095,7 @@ export default function App() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex justify-between items-center mb-8"
+            className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4"
           >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl">
@@ -354,23 +1108,35 @@ export default function App() {
                 <p className="text-gray-500 dark:text-gray-400">Advanced Academic Performance Monitor</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
-                className="p-3 rounded-full bg-white/20 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all duration-300 border border-white/20 dark:border-gray-700/50"
-              >
-                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={handleShareCGPA}
-                className="p-3 rounded-full bg-white/20 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all duration-300 border border-white/20 dark:border-gray-700/50"
-              >
-                <Share2 size={20} />
-              </motion.button>
+            <div className="flex items-center gap-4 p-2 rounded-full bg-white/20 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 pl-2">GUEST</span>
+                    <div onClick={handleToggleGuestMode} className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${isGuestMode ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
+                        <motion.div
+                            className="w-5 h-5 bg-white rounded-full shadow-md"
+                            layout
+                            transition={{type: "spring", stiffness: 700, damping: 30}}
+                            animate={{ x: isGuestMode ? 22 : 0 }}
+                        />
+                    </div>
+                </div>
+                <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+                <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+                    className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all"
+                >
+                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                </motion.button>
+                <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleShareCGPA}
+                    className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all"
+                >
+                    <Share2 size={20} />
+                </motion.button>
             </div>
           </motion.header>
 
@@ -420,10 +1186,10 @@ export default function App() {
 
               {/* Goal Tracker and Export Options */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <GoalTracker currentCGPA={cgpa} />
+                <GoalTracker currentCGPA={cgpa} isGuestMode={isGuestMode} />
                 <ExportOptions semesters={semesters} cgpa={cgpa} totalCredits={totalCredits} />
                 <QuickActions
-                  onCalculateRequired={handleCalculateRequired}
+                  onCalculateRequired={() => setReqModalVisible(true)}
                   onViewTrends={handleViewTrends}
                   onViewAchievements={handleViewAchievements}
                   onAddSemester={handleAddNewSemester}
@@ -450,19 +1216,19 @@ export default function App() {
                       className="p-6 flex items-center gap-4 cursor-pointer"
                       onClick={() => handleToggleSemester(index)}
                     >
-                      <div className="flex-grow">
-                        <h3 className="font-bold text-xl text-gray-900 dark:text-white">{semester.name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex-grow min-w-0">
+                        <h3 className="font-bold text-lg text-gray-900 dark:text-white truncate">{semester.name}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                           {semester.subjects.reduce((acc, s) => acc + (parseFloat(s.credits) || 0), 0)} Credits • {semester.subjects.length} Subjects
                         </p>
                       </div>
-                      <div className="text-center">
+                      <div className="text-center flex-shrink-0">
                         <p className="font-bold text-3xl bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
                           {semester.sgpa}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">SGPA</p>
                       </div>
-                      <div className="flex gap-2 items-center">
+                      <div className="flex gap-2 items-center flex-shrink-0">
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -535,7 +1301,7 @@ export default function App() {
           )}
         </div>
 
-        {/* Modal */}
+        {/* Semester Modal */}
         <AnimatePresence>
           {modalVisible && (
             <motion.div
@@ -660,6 +1426,74 @@ export default function App() {
           )}
         </AnimatePresence>
 
+         {/* Required CGPA Modal */}
+         <AnimatePresence>
+          {reqModalVisible && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-sm flex flex-col border border-white/20 dark:border-gray-700/50"
+              >
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Target CGPA Calculator</h3>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setReqModalVisible(false)}
+                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X size={20} />
+                  </motion.button>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                      Target CGPA
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g., 8.5"
+                      value={targetCgpaForCalc}
+                      onChange={e => setTargetCgpaForCalc(e.target.value)}
+                      className={modalInputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                      Total Remaining Credits
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g., 48"
+                      value={remainingCreditsForCalc}
+                      onChange={e => setRemainingCreditsForCalc(e.target.value)}
+                      className={modalInputStyle}
+                    />
+                  </div>
+                </div>
+                <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCalculateRequiredCgpa}
+                        className="w-full text-center py-4 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg"
+                    >
+                        <Calculator size={20} />
+                        Calculate
+                    </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Floating Action Button - centered and non-overlapping */}
         {semesters.length > 0 && (
           <motion.div
@@ -682,3 +1516,4 @@ export default function App() {
     </>
   );
 }
+
