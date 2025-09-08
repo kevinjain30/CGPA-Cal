@@ -1095,48 +1095,52 @@ export default function App() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4"
+            className="mb-8"
           >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl">
-                <GraduationCap className="text-white" size={32} />
-              </div>
-              <div>
-                <h1 className="text-4xl font-extrabold bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-transparent">
-                  CGPA Tracker
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400">Advanced Academic Performance Monitor</p>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl">
+                  <GraduationCap className="text-white" size={32} />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-extrabold bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-transparent">
+                    CGPA Tracker
+                  </h1>
+                  <p className="text-gray-500 dark:text-gray-400">Advanced Academic Performance Monitor</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-4 p-2 rounded-full bg-white/20 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 pl-2">GUEST</span>
-                    <div onClick={handleToggleGuestMode} className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${isGuestMode ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
-                        <motion.div
-                            className="w-5 h-5 bg-white rounded-full shadow-md"
-                            layout
-                            transition={{type: "spring", stiffness: 700, damping: 30}}
-                            animate={{ x: isGuestMode ? 22 : 0 }}
-                        />
+            <div className="mt-4 flex justify-start sm:justify-end">
+                <div className="flex items-center gap-4 p-2 rounded-full bg-white/20 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 pl-2">GUEST</span>
+                        <div onClick={handleToggleGuestMode} className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${isGuestMode ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
+                            <motion.div
+                                className="w-5 h-5 bg-white rounded-full shadow-md"
+                                layout
+                                transition={{type: "spring", stiffness: 700, damping: 30}}
+                                animate={{ x: isGuestMode ? 22 : 0 }}
+                            />
+                        </div>
                     </div>
+                    <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+                        className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all"
+                    >
+                        {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handleShareCGPA}
+                        className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all"
+                    >
+                        <Share2 size={20} />
+                    </motion.button>
                 </div>
-                <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-                <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
-                    className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all"
-                >
-                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                </motion.button>
-                <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={handleShareCGPA}
-                    className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all"
-                >
-                    <Share2 size={20} />
-                </motion.button>
             </div>
           </motion.header>
 
@@ -1213,7 +1217,7 @@ export default function App() {
                     className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl border border-white/30 dark:border-slate-700/60"
                   >
                     <div
-                      className="p-6 flex items-center gap-4 cursor-pointer"
+                      className="p-6 flex items-center justify-between gap-4 cursor-pointer"
                       onClick={() => handleToggleSemester(index)}
                     >
                       <div className="flex-grow min-w-0">
@@ -1222,35 +1226,37 @@ export default function App() {
                           {semester.subjects.reduce((acc, s) => acc + (parseFloat(s.credits) || 0), 0)} Credits • {semester.subjects.length} Subjects
                         </p>
                       </div>
-                      <div className="text-center flex-shrink-0">
-                        <p className="font-bold text-3xl bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
-                          {semester.sgpa}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">SGPA</p>
-                      </div>
-                      <div className="flex gap-2 items-center flex-shrink-0">
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => { e.stopPropagation(); handleEditSemester(index); }}
-                          className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                        >
-                          <Edit size={18} />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => { e.stopPropagation(); handleDeleteSemester(index); }}
-                          className="p-3 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                        >
-                          <Trash2 size={18} />
-                        </motion.button>
-                        <motion.div
-                          animate={{ rotate: openSemesterIndex === index ? 180 : 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <ChevronDown size={20} />
-                        </motion.div>
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        <div className="text-center">
+                            <p className="font-bold text-3xl bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
+                            {semester.sgpa}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">SGPA</p>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => { e.stopPropagation(); handleEditSemester(index); }}
+                            className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                          >
+                            <Edit size={18} />
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteSemester(index); }}
+                            className="p-3 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                          >
+                            <Trash2 size={18} />
+                          </motion.button>
+                          <motion.div
+                            animate={{ rotate: openSemesterIndex === index ? 180 : 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <ChevronDown size={20} />
+                          </motion.div>
+                        </div>
                       </div>
                     </div>
                     
