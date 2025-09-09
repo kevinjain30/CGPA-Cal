@@ -80,122 +80,131 @@ const StatsCard = ({
 
 // --- GradeChart Component ---
 const GradeChart = ({ semesters }) => {
-    const chartData = React.useMemo(() => {
-      return semesters.map((sem) => ({
-        semester: sem.name,
-        sgpa: parseFloat(sem.sgpa),
-      }));
-    }, [semesters]);
+  const chartData = React.useMemo(() => {
+    return semesters.map((sem) => ({
+      semester: sem.name,
+      sgpa: parseFloat(sem.sgpa),
+    }));
+  }, [semesters]);
 
-    const maxSGPA = 10;
+  const maxSGPA = 10;
 
-    if (chartData.length === 0) return null;
+  if (chartData.length === 0) return null;
 
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-        className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
-      >
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">SGPA Trend</h3>
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.3 }}
+      className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
+    >
+      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+        SGPA Trend
+      </h3>
 
-        <div className="relative h-64">
-          <svg className="w-full h-full" viewBox="0 0 400 200">
-            {/* Gradient definition first to ensure availability */}
-            <defs>
-              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#0EA5E9" />
-                <stop offset="100%" stopColor="#4F46E5" />
-              </linearGradient>
-            </defs>
+      <div className="relative h-64">
+        <svg className="w-full h-full" viewBox="0 0 400 200">
+          {/* Gradient definition first to ensure availability */}
+          <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#0EA5E9" />
+              <stop offset="100%" stopColor="#4F46E5" />
+            </linearGradient>
+          </defs>
 
-            {/* Grid lines */}
-            {[0, 2, 4, 6, 8, 10].map(value => (
-              <g key={value}>
-                <line
-                  x1="40"
-                  y1={180 - (value / maxSGPA) * 160}
-                  x2="380"
-                  y2={180 - (value / maxSGPA) * 160}
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="text-gray-200 dark:text-gray-700"
-                  strokeDasharray="2,2"
-                />
-                <text
-                  x="30"
-                  y={185 - (value / maxSGPA) * 160}
-                  className="text-xs fill-gray-500 dark:fill-gray-400"
-                  textAnchor="end"
-                >
-                  {value}
-                </text>
-              </g>
-            ))}
+          {/* Grid lines */}
+          {[0, 2, 4, 6, 8, 10].map((value) => (
+            <g key={value}>
+              <line
+                x1="40"
+                y1={180 - (value / maxSGPA) * 160}
+                x2="380"
+                y2={180 - (value / maxSGPA) * 160}
+                stroke="currentColor"
+                strokeWidth="1"
+                className="text-gray-200 dark:text-gray-700"
+                strokeDasharray="2,2"
+              />
+              <text
+                x="30"
+                y={185 - (value / maxSGPA) * 160}
+                className="text-xs fill-gray-500 dark:fill-gray-400"
+                textAnchor="end"
+              >
+                {value}
+              </text>
+            </g>
+          ))}
 
-            {/* Chart line - connect only valid points */}
-            {(() => {
-              const step = 300 / Math.max(chartData.length - 1, 1);
-              let d = '';
-              let started = false;
-              chartData.forEach((point, index) => {
-                const sg = Number(point.sgpa);
-                const x = 50 + (index * step);
-                const y = 180 - ((sg / maxSGPA) * 160);
-                if (Number.isFinite(sg)) {
-                  if (!started) { d += `M ${x},${y}`; started = true; }
-                  else { d += ` L ${x},${y}`; }
-                } else {
-                  started = false;
-                }
-              });
-              return d && d.includes('L') ? (
-                <motion.path
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 2, ease: "easeInOut" }}
-                  d={d}
-                  fill="none"
-                  stroke="url(#gradient)"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              ) : null;
-            })()}
-
-            {/* Data points */}
-            {chartData.map((point, index) => {
+          {/* Chart line - connect only valid points */}
+          {(() => {
+            const step = 300 / Math.max(chartData.length - 1, 1);
+            let d = "";
+            let started = false;
+            chartData.forEach((point, index) => {
               const sg = Number(point.sgpa);
-              if (!Number.isFinite(sg)) return null;
-              return (
-                <motion.circle
-                  key={index}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                  cx={50 + (index * (300 / Math.max(chartData.length - 1, 1)))}
-                  cy={180 - (sg / maxSGPA) * 160}
-                  r="6"
-                  fill="url(#gradient)"
-                  className="drop-shadow-lg"
-                />
-              );
-            })}
-            {/* Gradient definition already declared above */}
-          </svg>
+              const x = 50 + index * step;
+              const y = 180 - (sg / maxSGPA) * 160;
+              if (Number.isFinite(sg)) {
+                if (!started) {
+                  d += `M ${x},${y}`;
+                  started = true;
+                } else {
+                  d += ` L ${x},${y}`;
+                }
+              } else {
+                started = false;
+              }
+            });
+            return d && d.includes("L") ? (
+              <motion.path
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 2, ease: "easeInOut" }}
+                d={d}
+                fill="none"
+                stroke="url(#gradient)"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            ) : null;
+          })()}
 
-          {/* X-axis labels */}
-          <div className="flex justify-between mt-4 px-12">
-            {chartData.map((point, index) => (
-              <span key={index} className="text-xs text-gray-500 dark:text-gray-400 transform -rotate-45 origin-left">
-                {point.semester}
-              </span>
-            ))}
-          </div>
+          {/* Data points */}
+          {chartData.map((point, index) => {
+            const sg = Number(point.sgpa);
+            if (!Number.isFinite(sg)) return null;
+            return (
+              <motion.circle
+                key={index}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
+                cx={50 + index * (300 / Math.max(chartData.length - 1, 1))}
+                cy={180 - (sg / maxSGPA) * 160}
+                r="6"
+                fill="url(#gradient)"
+                className="drop-shadow-lg"
+              />
+            );
+          })}
+          {/* Gradient definition already declared above */}
+        </svg>
+
+        {/* X-axis labels */}
+        <div className="flex justify-between mt-4 px-12">
+          {chartData.map((point, index) => (
+            <span
+              key={index}
+              className="text-xs text-gray-500 dark:text-gray-400 transform -rotate-45 origin-left"
+            >
+              {point.semester}
+            </span>
+          ))}
         </div>
-      </motion.div>
-    );
+      </div>
+    </motion.div>
+  );
 };
 
 // --- GradeDistribution Component ---
@@ -435,7 +444,7 @@ const GoalTracker = ({ currentCGPA, isGuestMode }) => {
 };
 
 // --- ExportOptions Component ---
-const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
+const ExportOptions = ({ semesters, cgpa, totalCredits, userName }) => {
   const [isExporting, setIsExporting] = useState(false);
 
   const exportAsPDF = async () => {
@@ -456,14 +465,14 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         now.getMonth() + 1
       )}-${now.getFullYear()}`;
 
-      const addHeading = (text, size = 18) => {
+      const addHeading = (text, size = 20) => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(size);
         doc.text(text, margin, cursorY);
-        cursorY += 24;
+        cursorY += 26;
       };
 
-      const addText = (text, size = 12, bold = false) => {
+      const addText = (text, size = 14, bold = false) => {
         doc.setFont("helvetica", bold ? "bold" : "normal");
         doc.setFontSize(size);
         const lines = doc.splitTextToSize(text, pageWidth - margin * 2);
@@ -474,7 +483,7 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
       const addDivider = () => {
         doc.setDrawColor(200);
         doc.line(margin, cursorY, pageWidth - margin, cursorY);
-        cursorY += 12;
+        cursorY += 14;
       };
 
       // Header band
@@ -484,18 +493,31 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
       doc.roundedRect(0, 66, pageWidth, 4, 0, 0, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(20);
+      doc.setFontSize(22);
       doc.text("CGPA Report", margin, 44);
+
+      if (userName) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        const nameWidth = doc.getTextWidth(`Name: ${userName}`);
+        doc.text(`Name: ${userName}`, pageWidth - margin - nameWidth, 44);
+      }
+
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      doc.text(`Generated: ${ddmmyyyy}`, pageWidth - margin - 140, 44);
+      doc.setFontSize(13);
+      const headerRight = `Generated: ${ddmmyyyy}`;
+      doc.text(
+        headerRight,
+        pageWidth - margin - doc.getTextWidth(headerRight),
+        64
+      );
       doc.setTextColor(0, 0, 0);
       cursorY = 100;
       addDivider();
 
       // Summary table block
-      addHeading("Summary", 14);
-      const rowH = 24;
+      addHeading("Summary", 16);
+      const rowH = 26;
       const colW = (pageWidth - margin * 2) / 4;
       const cells = [
         { label: "Overall CGPA", value: String(cgpa) },
@@ -511,17 +533,17 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
           : "0.00";
       cells.push({ label: "Average SGPA", value: String(avg) });
 
-      doc.setFontSize(11);
+      doc.setFontSize(13);
       cells.forEach((c, i) => {
         const x = margin + i * colW;
         doc.setDrawColor(220);
         doc.roundedRect(x, cursorY, colW - 10, rowH, 6, 6);
         doc.setFont("helvetica", "normal");
-        doc.text(c.label, x + 10, cursorY + 14);
+        doc.text(c.label, x + 10, cursorY + 16);
         doc.setFont("helvetica", "bold");
-        doc.text(c.value, x + 10, cursorY + 14 + 12);
+        doc.text(c.value, x + 10, cursorY + 16 + 14);
       });
-      cursorY += rowH + 18;
+      cursorY += rowH + 20;
       addDivider();
 
       const subjectColWidth = 300;
@@ -537,7 +559,7 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
 
       const drawHeaderRow = () => {
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
+        doc.setFontSize(13);
         doc.text("Subject", colX[0], cursorY);
         doc.text("Grade", colX[1] + gradeColWidth - 4, cursorY, {
           align: "right",
@@ -548,10 +570,10 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         doc.text("Points", colX[3] + pointsColWidth - 4, cursorY, {
           align: "right",
         });
-        cursorY += 12;
+        cursorY += 14;
         doc.setDrawColor(200);
         doc.line(margin, cursorY, pageWidth - margin, cursorY);
-        cursorY += 6;
+        cursorY += 8;
         doc.setFont("helvetica", "normal");
       };
 
@@ -564,11 +586,11 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         if (si > 0) {
           doc.setDrawColor(120, 120, 120);
           doc.setLineWidth(0.8);
-          doc.line(margin, cursorY - 12, pageWidth - margin, cursorY - 12);
+          doc.line(margin, cursorY - 14, pageWidth - margin, cursorY - 14);
           doc.setLineWidth(0.2);
         }
 
-        addHeading(`${sem.name}`, 13);
+        addHeading(`${sem.name}`, 15);
         addText(`SGPA: ${sem.sgpa}`);
         drawHeaderRow();
 
@@ -583,7 +605,7 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
             sub.name || "-",
             subjectColWidth - 10
           );
-          const lineHeight = 14;
+          const lineHeight = 16;
           const rowHeight = Math.max(
             lineHeight,
             subjectText.length * lineHeight
@@ -593,9 +615,9 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
             doc.setFillColor(245, 247, 250);
             doc.rect(
               margin - 4,
-              cursorY - 10,
+              cursorY - 12,
               pageWidth - margin * 2 + 8,
-              rowHeight + 6,
+              rowHeight + 8,
               "F"
             );
           }
@@ -622,7 +644,7 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
           cursorY += rowHeight;
         });
 
-        cursorY += 10;
+        cursorY += 12;
       });
 
       const fileName = `cgpa-report-${ddmmyyyyFile}.pdf`;
@@ -637,7 +659,7 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         await Filesystem.writeFile({
           path: `CGPA Reports/${fileName}`,
           data: base64,
-          directory: 'DOCUMENTS',
+          directory: "DOCUMENTS",
           recursive: true,
         });
         alert(`Saved to Documents/CGPA Reports/${fileName}`);
@@ -865,16 +887,29 @@ export default function App() {
       setSemesters(storedSemesters);
       const storedTheme = localStorage.getItem("theme") || "light";
       setTheme(storedTheme);
-      const normalizeCap = (s) => s.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-      const storedName = normalizeCap((localStorage.getItem("user_name") || "").trim());
+      const normalizeCap = (s) =>
+        s
+          .split(" ")
+          .filter(Boolean)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(" ");
+      const storedName = normalizeCap(
+        (localStorage.getItem("user_name") || "").trim()
+      );
       if (storedName) {
         setUserName(storedName);
       } else {
         // First time: ask once
-        const entered = (typeof window !== 'undefined' ? window.prompt("Please enter your name:", "") : "") || "";
+        const entered =
+          (typeof window !== "undefined"
+            ? window.prompt("Please enter your name:", "")
+            : "") || "";
         const safe = normalizeCap(entered.trim() || "User");
         setUserName(safe);
-        try { localStorage.setItem("user_name", safe); localStorage.setItem("cgpa_report_name", safe); } catch {}
+        try {
+          localStorage.setItem("user_name", safe);
+          localStorage.setItem("cgpa_report_name", safe);
+        } catch {}
       }
     } catch (e) {
       console.error("Failed to load data from storage", e);
@@ -924,8 +959,16 @@ export default function App() {
         setSemesters([]);
         setOpenSemesterIndex(null);
         // Ask name every time in guest mode
-        const entered = (typeof window !== 'undefined' ? window.prompt("Enter your name (Guest):", "") : "") || "";
-        const normalizeCap = (s) => s.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        const entered =
+          (typeof window !== "undefined"
+            ? window.prompt("Enter your name (Guest):", "")
+            : "") || "";
+        const normalizeCap = (s) =>
+          s
+            .split(" ")
+            .filter(Boolean)
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(" ");
         const safe = normalizeCap((entered || "User").trim() || "User");
         setUserName(safe);
       },
@@ -1391,7 +1434,8 @@ export default function App() {
                     CGPA Tracker
                   </h1>
                   <p className="text-gray-500 dark:text-gray-400">
-                    Welcome {userName && userName.trim().length > 0 ? userName : "User"}
+                    Welcome{" "}
+                    {userName && userName.trim().length > 0 ? userName : "User"}
                   </p>
                 </div>
               </div>
@@ -1496,6 +1540,7 @@ export default function App() {
                   semesters={semesters}
                   cgpa={cgpa}
                   totalCredits={totalCredits}
+                  userName={userName}
                 />
                 <QuickActions
                   onAddSemester={handleAddNewSemester}

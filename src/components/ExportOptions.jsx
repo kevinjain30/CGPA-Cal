@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Download, Share2 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import { Capacitor } from '@capacitor/core';
-import { Filesystem } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
-import { Browser } from '@capacitor/browser';
-import { Dialog } from '@capacitor/dialog';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Download, Share2 } from "lucide-react";
+import jsPDF from "jspdf";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
+import { Browser } from "@capacitor/browser";
+import { Dialog } from "@capacitor/dialog";
 
-const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
+const ExportOptions = ({ semesters, cgpa, totalCredits, userName }) => {
   const [isExporting, setIsExporting] = useState(false);
-  const [reportName, setReportName] = useState('');
+  const [reportName, setReportName] = useState("");
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('cgpa_report_name') || '';
+      const stored = localStorage.getItem("cgpa_report_name") || "";
       if (stored) setReportName(stored);
     } catch {}
   }, []);
@@ -22,52 +22,30 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
   const exportAsPDF = async () => {
     setIsExporting(true);
     try {
-      // Ask for user name (persist) - try storage → Capacitor Dialog → browser prompt
-      let userName = reportName || localStorage.getItem('cgpa_report_name') || '';
-      if (!userName) {
-        try {
-          const res = await Dialog.prompt({
-            title: 'Your Name',
-            message: 'Enter your name to include in the PDF header.',
-            inputPlaceholder: 'e.g., John Doe',
-            okButtonTitle: 'Save',
-            cancelButtonTitle: 'Skip'
-          });
-          if (res?.value) userName = res.value;
-        } catch {}
-      }
-      if (!userName && typeof window !== 'undefined') {
-        try {
-          userName = window.prompt('Enter your name for the PDF header:', '') || '';
-        } catch {}
-      }
-      if (userName) {
-        localStorage.setItem('cgpa_report_name', userName);
-        setReportName(userName);
-      }
-      const sanitize = (s) => (s || '').replace(/[^a-zA-Z0-9_\- ]/g, '').trim();
-      const capitalizeWords = (s) => s.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-      const safeName = capitalizeWords(sanitize(userName));
-      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 40;
       let cursorY = margin;
 
       const now = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      const ddmmyyyy = `${pad(now.getDate())}:${pad(now.getMonth() + 1)}:${now.getFullYear()}`;
-      const ddmmyyyyFile = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`;
+      const pad = (n) => String(n).padStart(2, "0");
+      const ddmmyyyy = `${pad(now.getDate())}:${pad(
+        now.getMonth() + 1
+      )}:${now.getFullYear()}`;
+      const ddmmyyyyFile = `${pad(now.getDate())}-${pad(
+        now.getMonth() + 1
+      )}-${now.getFullYear()}`;
 
-      const addHeading = (text, size = 18) => {
-        doc.setFont('helvetica', 'bold');
+      const addHeading = (text, size = 20) => {
+        doc.setFont("helvetica", "bold");
         doc.setFontSize(size);
         doc.text(text, margin, cursorY);
-        cursorY += 24;
+        cursorY += 26;
       };
 
-      const addText = (text, size = 12, bold = false) => {
-        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      const addText = (text, size = 14, bold = false) => {
+        doc.setFont("helvetica", bold ? "bold" : "normal");
         doc.setFontSize(size);
         const lines = doc.splitTextToSize(text, pageWidth - margin * 2);
         doc.text(lines, margin, cursorY);
@@ -77,56 +55,65 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
       const addDivider = () => {
         doc.setDrawColor(200);
         doc.line(margin, cursorY, pageWidth - margin, cursorY);
-        cursorY += 12;
+        cursorY += 14;
       };
 
       // Header band
       doc.setFillColor(14, 165, 233);
-      doc.roundedRect(0, 0, pageWidth, 70, 0, 0, 'F');
+      doc.roundedRect(0, 0, pageWidth, 70, 0, 0, "F");
       doc.setFillColor(79, 70, 229);
-      doc.roundedRect(0, 66, pageWidth, 4, 0, 0, 'F');
+      doc.roundedRect(0, 66, pageWidth, 4, 0, 0, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
-      doc.text('CGPA Report', margin, 44);
-      if (safeName) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(16);
-        doc.text(`Name: ${safeName}`, margin, 62);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.text("CGPA Report", margin, 44);
+      if (userName) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        const nameWidth = doc.getTextWidth(`Name: ${userName}`);
+        doc.text(`Name: ${userName}`, pageWidth - margin - nameWidth, 44);
       }
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(13);
       const headerRight = `Generated: ${ddmmyyyy}`;
-      doc.text(headerRight, pageWidth - margin - doc.getTextWidth(headerRight), 44);
+      doc.text(
+        headerRight,
+        pageWidth - margin - doc.getTextWidth(headerRight),
+        64
+      );
       doc.setTextColor(0, 0, 0);
       cursorY = 100;
       addDivider();
 
       // Summary
-      addHeading('Summary', 14);
-      const rowH = 24;
+      addHeading("Summary", 16);
+      const rowH = 26;
       const colW = (pageWidth - margin * 2) / 4;
       const cells = [
-        { label: 'Overall CGPA', value: String(cgpa) },
-        { label: 'Total Credits', value: String(totalCredits) },
-        { label: 'Semesters', value: String(semesters.length) },
+        { label: "Overall CGPA", value: String(cgpa) },
+        { label: "Total Credits", value: String(totalCredits) },
+        { label: "Semesters", value: String(semesters.length) },
       ];
-      const avg = semesters.length > 0
-        ? (semesters.reduce((s, sem) => s + parseFloat(sem.sgpa || 0), 0) / semesters.length).toFixed(2)
-        : '0.00';
-      cells.push({ label: 'Average SGPA', value: String(avg) });
+      const avg =
+        semesters.length > 0
+          ? (
+              semesters.reduce((s, sem) => s + parseFloat(sem.sgpa || 0), 0) /
+              semesters.length
+            ).toFixed(2)
+          : "0.00";
+      cells.push({ label: "Average SGPA", value: String(avg) });
 
-      doc.setFontSize(11);
+      doc.setFontSize(13);
       cells.forEach((c, i) => {
         const x = margin + i * colW;
         doc.setDrawColor(220);
         doc.roundedRect(x, cursorY, colW - 10, rowH, 6, 6);
-        doc.setFont('helvetica', 'normal');
-        doc.text(c.label, x + 10, cursorY + 14);
-        doc.setFont('helvetica', 'bold');
-        doc.text(c.value, x + 10, cursorY + 14 + 12);
+        doc.setFont("helvetica", "normal");
+        doc.text(c.label, x + 10, cursorY + 16);
+        doc.setFont("helvetica", "bold");
+        doc.text(c.value, x + 10, cursorY + 16 + 14);
       });
-      cursorY += rowH + 18;
+      cursorY += rowH + 20;
       addDivider();
 
       // Table layout
@@ -142,21 +129,29 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
       ];
 
       const drawHeaderRow = () => {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.text('Subject', colX[0], cursorY);
-        doc.text('Grade', colX[1] + gradeColWidth - 4, cursorY, { align: 'right' });
-        doc.text('Credits', colX[2] + creditsColWidth - 4, cursorY, { align: 'right' });
-        doc.text('Points', colX[3] + pointsColWidth - 4, cursorY, { align: 'right' });
-        cursorY += 12;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text("Subject", colX[0], cursorY);
+        doc.text("Grade", colX[1] + gradeColWidth - 4, cursorY, {
+          align: "right",
+        });
+        doc.text("Credits", colX[2] + creditsColWidth - 4, cursorY, {
+          align: "right",
+        });
+        doc.text("Points", colX[3] + pointsColWidth - 4, cursorY, {
+          align: "right",
+        });
+        cursorY += 14;
         doc.setDrawColor(200);
         // header bottom line
         doc.line(margin, cursorY, pageWidth - margin, cursorY);
         // vertical guides for alignment
         doc.setDrawColor(230);
-        [colX[1], colX[2], colX[3]].forEach(x => doc.line(x, cursorY - 12, x, pageHeight - margin));
-        cursorY += 6;
-        doc.setFont('helvetica', 'normal');
+        [colX[1], colX[2], colX[3]].forEach((x) =>
+          doc.line(x, cursorY - 14, x, pageHeight - margin)
+        );
+        cursorY += 8;
+        doc.setFont("helvetica", "normal");
       };
 
       semesters.forEach((sem, si) => {
@@ -168,11 +163,11 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         if (si > 0) {
           doc.setDrawColor(120, 120, 120);
           doc.setLineWidth(0.8);
-          doc.line(margin, cursorY - 12, pageWidth - margin, cursorY - 12);
+          doc.line(margin, cursorY - 14, pageWidth - margin, cursorY - 14);
           doc.setLineWidth(0.2);
         }
 
-        addHeading(`${sem.name}`, 13);
+        addHeading(`${sem.name}`, 15);
         addText(`SGPA: ${sem.sgpa}`);
         drawHeaderRow();
 
@@ -182,42 +177,81 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
             cursorY = margin;
             drawHeaderRow();
           }
-          const subjectText = doc.splitTextToSize(sub.name || '-', subjectColWidth - 10);
-          const lineHeight = 14;
-          const rowHeight = Math.max(lineHeight, subjectText.length * lineHeight);
+          const subjectText = doc.splitTextToSize(
+            sub.name || "-",
+            subjectColWidth - 10
+          );
+          const lineHeight = 16;
+          const rowHeight = Math.max(
+            lineHeight,
+            subjectText.length * lineHeight
+          );
 
           if (idx % 2 === 0) {
             doc.setFillColor(245, 247, 250);
-            doc.rect(margin - 4, cursorY - 10, pageWidth - margin * 2 + 8, rowHeight + 6, 'F');
+            doc.rect(
+              margin - 4,
+              cursorY - 12,
+              pageWidth - margin * 2 + 8,
+              rowHeight + 8,
+              "F"
+            );
           }
 
           doc.text(subjectText, colX[0], cursorY);
-          const grade = (sub.grade || '').toUpperCase();
-          const gradePoints = { 'A+': 10, 'A': 9, 'B': 8, 'C': 7, 'D': 6, 'E': 5, 'F': 0 };
-          doc.text(grade || '-', colX[1] + gradeColWidth - 4, cursorY, { align: 'right' });
-          doc.text(String(sub.credits || '-'), colX[2] + creditsColWidth - 4, cursorY, { align: 'right' });
-          doc.text(String(gradePoints[grade] ?? '-'), colX[3] + pointsColWidth - 4, cursorY, { align: 'right' });
+          const grade = (sub.grade || "").toUpperCase();
+          const gradePoints = { "A+": 10, A: 9, B: 8, C: 7, D: 6, E: 5, F: 0 };
+          doc.text(grade || "-", colX[1] + gradeColWidth - 4, cursorY, {
+            align: "right",
+          });
+          doc.text(
+            String(sub.credits || "-"),
+            colX[2] + creditsColWidth - 4,
+            cursorY,
+            { align: "right" }
+          );
+          doc.text(
+            String(gradePoints[grade] ?? "-"),
+            colX[3] + pointsColWidth - 4,
+            cursorY,
+            { align: "right" }
+          );
 
           // row baseline
           doc.setDrawColor(235);
-          doc.line(margin, cursorY + rowHeight - (lineHeight - 2), pageWidth - margin, cursorY + rowHeight - (lineHeight - 2));
+          doc.line(
+            margin,
+            cursorY + rowHeight - (lineHeight - 2),
+            pageWidth - margin,
+            cursorY + rowHeight - (lineHeight - 2)
+          );
 
           cursorY += rowHeight;
         });
 
-        cursorY += 10;
+        cursorY += 12;
       });
 
       const fileName = `cgpa-report-${ddmmyyyyFile}.pdf`;
 
       if (Capacitor?.isNativePlatform?.()) {
-        const base64 = doc.output('dataurlstring').split(',')[1];
-        try { await Filesystem.requestPermissions(); } catch {}
+        const base64 = doc.output("dataurlstring").split(",")[1];
+        try {
+          await Filesystem.requestPermissions();
+        } catch {}
 
         // Prefer Downloads on Android 11+; then Documents
         const targets = [
-          { dir: 'EXTERNAL_STORAGE', path: `Download/CGPA Reports/${fileName}`, msg: `Saved to Download/CGPA Reports/${fileName}` },
-          { dir: 'DOCUMENTS', path: `CGPA Reports/${fileName}`, msg: `Saved to Documents/CGPA Reports/${fileName}` },
+          {
+            dir: "EXTERNAL_STORAGE",
+            path: `Download/CGPA Reports/${fileName}`,
+            msg: `Saved to Download/CGPA Reports/${fileName}`,
+          },
+          {
+            dir: "DOCUMENTS",
+            path: `CGPA Reports/${fileName}`,
+            msg: `Saved to Documents/CGPA Reports/${fileName}`,
+          },
         ];
 
         for (const t of targets) {
@@ -241,31 +275,43 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
           await Filesystem.writeFile({
             path: cachePath,
             data: base64,
-            directory: 'CACHE',
+            directory: "CACHE",
             recursive: true,
           });
-          const { uri } = await Filesystem.getUri({ path: cachePath, directory: 'CACHE' });
+          const { uri } = await Filesystem.getUri({
+            path: cachePath,
+            directory: "CACHE",
+          });
           try {
-            await Share.share({ title: 'CGPA Report', text: 'CGPA report PDF', url: uri, dialogTitle: 'Share CGPA report' });
+            await Share.share({
+              title: "CGPA Report",
+              text: "CGPA report PDF",
+              url: uri,
+              dialogTitle: "Share CGPA report",
+            });
           } catch (shareErr) {
             // As last resort, open in Browser (system viewer) so user can choose an app to save
             try {
               await Browser.open({ url: uri });
             } catch (browserErr) {
-              console.error('Browser open failed', browserErr);
-              alert('Unable to share or open the PDF. Please check app storage permissions.');
+              console.error("Browser open failed", browserErr);
+              alert(
+                "Unable to share or open the PDF. Please check app storage permissions."
+              );
             }
           }
           return;
         } catch (errShare) {
-          console.error('Cache share failed', errShare);
-          alert('Unable to save or share the PDF. Please check storage permissions.');
+          console.error("Cache share failed", errShare);
+          alert(
+            "Unable to save or share the PDF. Please check storage permissions."
+          );
         }
       } else {
         doc.save(fileName);
       }
     } catch (error) {
-      console.error('Error exporting PDF:', error);
+      console.error("Error exporting PDF:", error);
     } finally {
       setIsExporting(false);
     }
@@ -276,15 +322,15 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'My CGPA Progress',
+          title: "My CGPA Progress",
           text: shareText,
         });
       } catch (error) {
-        console.log('Share cancelled');
+        console.log("Share cancelled");
       }
     } else {
       await navigator.clipboard.writeText(shareText);
-      alert('Progress copied to clipboard!');
+      alert("Progress copied to clipboard!");
     }
   };
 
@@ -299,15 +345,24 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         <div className="p-2 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg">
           <Download className="text-white" size={20} />
         </div>
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Export & Share</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          Export & Share
+        </h3>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2 flex items-center gap-2 mb-1">
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Report Name</label>
+          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+            Report Name
+          </label>
           <input
             value={reportName}
-            onChange={(e) => { setReportName(e.target.value); try { localStorage.setItem('cgpa_report_name', e.target.value); } catch {} }}
+            onChange={(e) => {
+              setReportName(e.target.value);
+              try {
+                localStorage.setItem("cgpa_report_name", e.target.value);
+              } catch {}
+            }}
             placeholder="e.g., John Doe"
             className="flex-1 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
           />
@@ -319,7 +374,7 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         >
           <Download size={18} />
           <span className="text-sm font-medium">
-            {isExporting ? 'Exporting...' : 'PDF'}
+            {isExporting ? "Exporting..." : "PDF"}
           </span>
         </button>
 
