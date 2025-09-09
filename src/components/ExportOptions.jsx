@@ -1,22 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-<<<<<<< HEAD
 import { Download, Share2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-=======
-import { Download, FileText, Image, Share2 } from 'lucide-react';
-import * as htmlToImage from 'html-to-image';
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
+import { Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Browser } from '@capacitor/browser';
+import { Dialog } from '@capacitor/dialog';
 
 const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
   const [isExporting, setIsExporting] = useState(false);
+  const [reportName, setReportName] = useState('');
 
-<<<<<<< HEAD
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('cgpa_report_name') || '';
+      if (stored) setReportName(stored);
+    } catch {}
+  }, []);
+
   const exportAsPDF = async () => {
     setIsExporting(true);
     try {
+      // Ask for user name (persist) - try storage → Capacitor Dialog → browser prompt
+      let userName = reportName || localStorage.getItem('cgpa_report_name') || '';
+      if (!userName) {
+        try {
+          const res = await Dialog.prompt({
+            title: 'Your Name',
+            message: 'Enter your name to include in the PDF header.',
+            inputPlaceholder: 'e.g., John Doe',
+            okButtonTitle: 'Save',
+            cancelButtonTitle: 'Skip'
+          });
+          if (res?.value) userName = res.value;
+        } catch {}
+      }
+      if (!userName && typeof window !== 'undefined') {
+        try {
+          userName = window.prompt('Enter your name for the PDF header:', '') || '';
+        } catch {}
+      }
+      if (userName) {
+        localStorage.setItem('cgpa_report_name', userName);
+        setReportName(userName);
+      }
+      const sanitize = (s) => (s || '').replace(/[^a-zA-Z0-9_\- ]/g, '').trim();
+      const capitalizeWords = (s) => s.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      const safeName = capitalizeWords(sanitize(userName));
       const doc = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -58,14 +89,20 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(20);
       doc.text('CGPA Report', margin, 44);
+      if (safeName) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.text(`Name: ${safeName}`, margin, 62);
+      }
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(11);
-      doc.text(`Generated: ${ddmmyyyy}`, pageWidth - margin - 140, 44);
+      const headerRight = `Generated: ${ddmmyyyy}`;
+      doc.text(headerRight, pageWidth - margin - doc.getTextWidth(headerRight), 44);
       doc.setTextColor(0, 0, 0);
       cursorY = 100;
       addDivider();
 
-      // Summary table block
+      // Summary
       addHeading('Summary', 14);
       const rowH = 24;
       const colW = (pageWidth - margin * 2) / 4;
@@ -74,7 +111,9 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         { label: 'Total Credits', value: String(totalCredits) },
         { label: 'Semesters', value: String(semesters.length) },
       ];
-      const avg = semesters.length > 0 ? (semesters.reduce((s, sem) => s + parseFloat(sem.sgpa || 0), 0) / semesters.length).toFixed(2) : '0.00';
+      const avg = semesters.length > 0
+        ? (semesters.reduce((s, sem) => s + parseFloat(sem.sgpa || 0), 0) / semesters.length).toFixed(2)
+        : '0.00';
       cells.push({ label: 'Average SGPA', value: String(avg) });
 
       doc.setFontSize(11);
@@ -90,6 +129,7 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
       cursorY += rowH + 18;
       addDivider();
 
+      // Table layout
       const subjectColWidth = 300;
       const gradeColWidth = 60;
       const creditsColWidth = 70;
@@ -98,7 +138,7 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         margin,
         margin + subjectColWidth,
         margin + subjectColWidth + gradeColWidth,
-        margin + subjectColWidth + gradeColWidth + creditsColWidth
+        margin + subjectColWidth + gradeColWidth + creditsColWidth,
       ];
 
       const drawHeaderRow = () => {
@@ -110,7 +150,11 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         doc.text('Points', colX[3] + pointsColWidth - 4, cursorY, { align: 'right' });
         cursorY += 12;
         doc.setDrawColor(200);
+        // header bottom line
         doc.line(margin, cursorY, pageWidth - margin, cursorY);
+        // vertical guides for alignment
+        doc.setDrawColor(230);
+        [colX[1], colX[2], colX[3]].forEach(x => doc.line(x, cursorY - 12, x, pageHeight - margin));
         cursorY += 6;
         doc.setFont('helvetica', 'normal');
       };
@@ -121,7 +165,6 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
           cursorY = margin;
         }
 
-        // Section divider between semesters
         if (si > 0) {
           doc.setDrawColor(120, 120, 120);
           doc.setLineWidth(0.8);
@@ -134,31 +177,30 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
         drawHeaderRow();
 
         sem.subjects.forEach((sub, idx) => {
-          // Check for page break and redraw header
           if (cursorY > pageHeight - 80) {
             doc.addPage();
             cursorY = margin;
             drawHeaderRow();
           }
-
           const subjectText = doc.splitTextToSize(sub.name || '-', subjectColWidth - 10);
           const lineHeight = 14;
           const rowHeight = Math.max(lineHeight, subjectText.length * lineHeight);
 
-          // zebra stripe full-width row area
           if (idx % 2 === 0) {
             doc.setFillColor(245, 247, 250);
             doc.rect(margin - 4, cursorY - 10, pageWidth - margin * 2 + 8, rowHeight + 6, 'F');
           }
 
-          // Subject left-aligned
           doc.text(subjectText, colX[0], cursorY);
           const grade = (sub.grade || '').toUpperCase();
           const gradePoints = { 'A+': 10, 'A': 9, 'B': 8, 'C': 7, 'D': 6, 'E': 5, 'F': 0 };
-          // Right-align numeric columns
           doc.text(grade || '-', colX[1] + gradeColWidth - 4, cursorY, { align: 'right' });
           doc.text(String(sub.credits || '-'), colX[2] + creditsColWidth - 4, cursorY, { align: 'right' });
           doc.text(String(gradePoints[grade] ?? '-'), colX[3] + pointsColWidth - 4, cursorY, { align: 'right' });
+
+          // row baseline
+          doc.setDrawColor(235);
+          doc.line(margin, cursorY + rowHeight - (lineHeight - 2), pageWidth - margin, cursorY + rowHeight - (lineHeight - 2));
 
           cursorY += rowHeight;
         });
@@ -168,92 +210,62 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
 
       const fileName = `cgpa-report-${ddmmyyyyFile}.pdf`;
 
-      if (Capacitor.isNativePlatform()) {
-        try {
-          await Filesystem.requestPermissions();
-        } catch {}
-        const pdfArrayBuffer = doc.output('arraybuffer');
-        const uint8Array = new Uint8Array(pdfArrayBuffer);
-        let binary = '';
-        for (let i = 0; i < uint8Array.length; i++) {
-          binary += String.fromCharCode(uint8Array[i]);
+      if (Capacitor?.isNativePlatform?.()) {
+        const base64 = doc.output('dataurlstring').split(',')[1];
+        try { await Filesystem.requestPermissions(); } catch {}
+
+        // Prefer Downloads on Android 11+; then Documents
+        const targets = [
+          { dir: 'EXTERNAL_STORAGE', path: `Download/CGPA Reports/${fileName}`, msg: `Saved to Download/CGPA Reports/${fileName}` },
+          { dir: 'DOCUMENTS', path: `CGPA Reports/${fileName}`, msg: `Saved to Documents/CGPA Reports/${fileName}` },
+        ];
+
+        for (const t of targets) {
+          try {
+            await Filesystem.writeFile({
+              path: t.path,
+              data: base64,
+              directory: t.dir,
+              recursive: true,
+            });
+            alert(t.msg);
+            return;
+          } catch (e) {
+            console.warn(`Save failed to ${t.dir}:${t.path}`, e);
+          }
         }
-        const base64 = btoa(binary);
-        await Filesystem.writeFile({
-          path: `CGPA Reports/${fileName}`,
-          data: base64,
-          directory: Directory.Documents,
-          recursive: true,
-        });
-        alert(`Saved to Documents/CGPA Reports/${fileName}`);
+
+        // 3) Fallback to Cache and open share sheet (or open in Browser)
+        try {
+          const cachePath = `cgpa/${fileName}`;
+          await Filesystem.writeFile({
+            path: cachePath,
+            data: base64,
+            directory: 'CACHE',
+            recursive: true,
+          });
+          const { uri } = await Filesystem.getUri({ path: cachePath, directory: 'CACHE' });
+          try {
+            await Share.share({ title: 'CGPA Report', text: 'CGPA report PDF', url: uri, dialogTitle: 'Share CGPA report' });
+          } catch (shareErr) {
+            // As last resort, open in Browser (system viewer) so user can choose an app to save
+            try {
+              await Browser.open({ url: uri });
+            } catch (browserErr) {
+              console.error('Browser open failed', browserErr);
+              alert('Unable to share or open the PDF. Please check app storage permissions.');
+            }
+          }
+          return;
+        } catch (errShare) {
+          console.error('Cache share failed', errShare);
+          alert('Unable to save or share the PDF. Please check storage permissions.');
+        }
       } else {
         doc.save(fileName);
       }
     } catch (error) {
       console.error('Error exporting PDF:', error);
-=======
-  const exportToJSON = () => {
-    const data = {
-      exportDate: new Date().toISOString(),
-      cgpa,
-      totalCredits,
-      semesters,
-      summary: {
-        totalSemesters: semesters.length,
-        totalSubjects: semesters.reduce((sum, sem) => sum + sem.subjects.length, 0)
-      }
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cgpa-report-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportToCSV = () => {
-    let csv = 'Semester,Subject,Credits,Grade,Grade Points\n';
-    
-    semesters.forEach(semester => {
-      semester.subjects.forEach(subject => {
-        const gradePoints = {
-          'O': 10, 'A+': 10, 'A': 9, 'B+': 8, 'B': 8,
-          'C': 7, 'D': 6, 'E': 5, 'P': 4, 'F': 0
-        };
-        csv += `"${semester.name}","${subject.name}",${subject.credits},"${subject.grade}",${gradePoints[subject.grade.toUpperCase()] || 0}\n`;
-      });
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cgpa-data-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportAsImage = async () => {
-    setIsExporting(true);
-    try {
-      const element = document.getElementById('cgpa-dashboard');
-      if (element) {
-        const dataUrl = await htmlToImage.toPng(element, {
-          quality: 1.0,
-          pixelRatio: 2,
-          backgroundColor: '#ffffff'
-        });
-        
-        const link = document.createElement('a');
-        link.download = `cgpa-dashboard-${new Date().toISOString().split('T')[0]}.png`;
-        link.href = dataUrl;
-        link.click();
-      }
-    } catch (error) {
-      console.error('Error exporting image:', error);
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
     } finally {
       setIsExporting(false);
     }
@@ -261,16 +273,11 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
 
   const shareProgress = async () => {
     const shareText = `🎓 My Academic Progress Update!\n\n📊 Current CGPA: ${cgpa}\n📚 Total Credits: ${totalCredits}\n🎯 Semesters Completed: ${semesters.length}\n\n#AcademicProgress #CGPA #StudentLife`;
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'My CGPA Progress',
-          text: shareText
+          text: shareText,
         });
       } catch (error) {
         console.log('Share cancelled');
@@ -286,25 +293,26 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.6 }}
-<<<<<<< HEAD
       className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/30 dark:border-slate-700/60"
     >
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg">
-=======
-      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20 dark:border-gray-700/50"
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
           <Download className="text-white" size={20} />
         </div>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white">Export & Share</h3>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2 flex items-center gap-2 mb-1">
+          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Report Name</label>
+          <input
+            value={reportName}
+            onChange={(e) => { setReportName(e.target.value); try { localStorage.setItem('cgpa_report_name', e.target.value); } catch {} }}
+            placeholder="e.g., John Doe"
+            className="flex-1 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
         <button
-<<<<<<< HEAD
           onClick={exportAsPDF}
           disabled={isExporting}
           className="flex items-center gap-2 p-3 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors disabled:opacity-50"
@@ -312,41 +320,12 @@ const ExportOptions = ({ semesters, cgpa, totalCredits }) => {
           <Download size={18} />
           <span className="text-sm font-medium">
             {isExporting ? 'Exporting...' : 'PDF'}
-=======
-          onClick={exportToJSON}
-          className="flex items-center gap-2 p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-        >
-          <FileText size={18} />
-          <span className="text-sm font-medium">JSON</span>
-        </button>
-
-        <button
-          onClick={exportToCSV}
-          className="flex items-center gap-2 p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-        >
-          <FileText size={18} />
-          <span className="text-sm font-medium">CSV</span>
-        </button>
-
-        <button
-          onClick={exportAsImage}
-          disabled={isExporting}
-          className="flex items-center gap-2 p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors disabled:opacity-50"
-        >
-          <Image size={18} />
-          <span className="text-sm font-medium">
-            {isExporting ? 'Exporting...' : 'Image'}
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
           </span>
         </button>
 
         <button
           onClick={shareProgress}
-<<<<<<< HEAD
           className="flex items-center gap-2 p-3 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded-lg hover:bg-cyan-200 dark:hover:bg-cyan-900/50 transition-colors"
-=======
-          className="flex items-center gap-2 p-3 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-200 dark:hover:bg-pink-900/50 transition-colors"
->>>>>>> e03a9f28181cb340a9c14168af2227a872cb5505
         >
           <Share2 size={18} />
           <span className="text-sm font-medium">Share</span>
