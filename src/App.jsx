@@ -20,6 +20,7 @@ import {
   Calculator,
   Percent,
   PlusCircle,
+  BarChart, // Added for the new Standing feature icon
 } from "lucide-react";
 
 // --- Libraries from CDN ---
@@ -188,7 +189,6 @@ const GradeChart = ({ semesters }) => {
               />
             );
           })}
-          {/* Gradient definition already declared above */}
         </svg>
 
         {/* X-axis labels */}
@@ -899,7 +899,6 @@ export default function App() {
       if (storedName) {
         setUserName(storedName);
       } else {
-        // First time: ask once
         const entered =
           (typeof window !== "undefined"
             ? window.prompt("Please enter your name:", "")
@@ -958,7 +957,6 @@ export default function App() {
         setIsGuestMode(true);
         setSemesters([]);
         setOpenSemesterIndex(null);
-        // Ask name every time in guest mode
         const entered =
           (typeof window !== "undefined"
             ? window.prompt("Enter your name (Guest):", "")
@@ -1029,6 +1027,24 @@ export default function App() {
       : (grandTotalPoints / grandTotalCredits).toFixed(2);
   }, [semesters]);
 
+  // ***** NEW FUNCTION *****
+  const getSemesterStanding = (sgpa) => {
+    const sg = parseFloat(sgpa);
+    if (isNaN(sg) || sg === 0)
+      return { text: "N/A", color: "from-gray-500 to-gray-600" };
+    if (sg >= 9.5)
+      return { text: "Outstanding", color: "from-amber-400 to-yellow-500" };
+    if (sg >= 9.0)
+      return { text: "Excellent", color: "from-green-500 to-emerald-500" };
+    if (sg >= 8.0)
+      return { text: "Very Good", color: "from-sky-500 to-blue-500" };
+    if (sg >= 7.0)
+      return { text: "Good", color: "from-indigo-500 to-violet-500" };
+    if (sg >= 6.0)
+      return { text: "Average", color: "from-slate-500 to-gray-600" };
+    return { text: "Needs Improvement", color: "from-red-500 to-rose-500" };
+  };
+
   const calculateSemesterAttendance = (attended, held) => {
     const attendedNum = parseInt(attended, 10);
     const heldNum = parseInt(held, 10);
@@ -1069,15 +1085,6 @@ export default function App() {
         ),
       0
     );
-  }, [semesters]);
-
-  const averageSGPA = useCallback(() => {
-    if (semesters.length === 0) return "0.00";
-    const totalSGPA = semesters.reduce(
-      (sum, sem) => sum + parseFloat(sem.sgpa || 0),
-      0
-    );
-    return (totalSGPA / semesters.length).toFixed(2);
   }, [semesters]);
 
   const handleCalculateRequiredCgpa = () => {
@@ -1618,7 +1625,8 @@ export default function App() {
                           </motion.div>
                         </div>
                       </div>
-                      <div className="mt-4 flex items-center gap-6 pt-4 border-t border-gray-200 dark:border-gray-700/50">
+                      {/* ***** MODIFIED SECTION ***** */}
+                      <div className="mt-4 flex items-center justify-between gap-6 pt-4 border-t border-gray-200 dark:border-gray-700/50">
                         <div className="text-left">
                           <p className="font-bold text-2xl bg-gradient-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent">
                             {calculateSemesterAttendance(
@@ -1631,6 +1639,18 @@ export default function App() {
                           </p>
                         </div>
                         <div className="text-left">
+                          <p
+                            className={`font-bold text-2xl bg-gradient-to-r ${
+                              getSemesterStanding(semester.sgpa).color
+                            } bg-clip-text text-transparent`}
+                          >
+                            {getSemesterStanding(semester.sgpa).text}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">
+                            STANDING
+                          </p>
+                        </div>
+                        <div className="text-left">
                           <p className="font-bold text-2xl bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
                             {semester.sgpa}
                           </p>
@@ -1639,6 +1659,7 @@ export default function App() {
                           </p>
                         </div>
                       </div>
+                      {/* ***** END MODIFIED SECTION ***** */}
                     </div>
 
                     <AnimatePresence>
@@ -1741,7 +1762,6 @@ export default function App() {
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        {/* FIX: Gave labels a fixed height and centered content to ensure alignment */}
                         <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide min-h-10 flex items-center justify-center text-center">
                           Classes Attended
                         </label>
@@ -1759,7 +1779,6 @@ export default function App() {
                         />
                       </div>
                       <div>
-                        {/* FIX: Gave labels a fixed height and centered content to ensure alignment */}
                         <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide min-h-10 flex items-center justify-center text-center">
                           Classes Held
                         </label>
