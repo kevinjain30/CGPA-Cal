@@ -125,22 +125,6 @@ Make sure you have the following installed:
 
 ---
 
-## 🎯 Grade Point System
-
-| Grade | Point Value | Description |
-|-------|------------|-------------|
-| **O** | 10 | Outstanding |
-| **A+** | 10 | Excellent |
-| **A** | 9 | Very Good |
-| **B+** | 8 | Good |
-| **B** | 8 | Above Average |
-| **C** | 7 | Average |
-| **D** | 6 | Below Average |
-| **P** | 4 | Pass |
-| **F** | 0 | Fail |
-
----
-
 ## 🔧 Available Scripts
 
 ```bash
